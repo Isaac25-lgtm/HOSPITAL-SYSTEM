@@ -71,7 +71,10 @@ jq '.config.dashboard.sections.patientInformation.patientAttributes = ["phoneNum
     | .config.dashboard.sections.patientInformation.addressFields = ["cityVillage"]
     | .config.dashboard.sections.vitals.dashboardConfig.conceptNames = ["Pulse","Temperature","Blood Pressure","Respiratory rate","Arterial blood oxygen saturation (pulse oximeter)"]
     | .config.dashboard.sections.vitals.dashboardConfig.numberOfVisits = 2
-    | .config.dashboard.sections.diagnosis.numberOfVisits = 2' $SRC/app.json > $O/apps/adt/app.json
+    | .config.dashboard.sections.diagnosis.numberOfVisits = 2
+    | .config.enableIPDFeature = false' $SRC/app.json > $O/apps/adt/app.json
+# enableIPDFeature points the ward screens at the IPD "care view" micro-frontend (/ipd/remoteEntry.js), which Bahmni Lite
+# does not ship: the screen would spin forever. Off = the classic ward screens (admit, beds, transfer, discharge).
 cp $SRC/extension.json $O/apps/adt/extension.json
 for f in v2/extension.json extension.json; do
   url=$([ "$f" = extension.json ] && echo "../adt/#/patient/search" || echo "/bahmni/adt/#/patient/search")

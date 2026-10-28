@@ -29,7 +29,7 @@
     "onTransferForwardTo": "#/patient/{{patientUuid}}/visit/{{visitUuid}}/encounter/{{encounterUuid}}/bed",
     "onDischargeForwardTo": "#/patient/search",
     "defaultVisitType": "IPD",
-    "enableIPDFeature": true,
+    "enableIPDFeature": false,
     "maxPatientsPerBed": 2,
     "ignoredTabularViewHeadings": [
       "uuid",

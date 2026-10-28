@@ -784,6 +784,8 @@
   // ---------------- boot ----------------
   var lastPage = null, lastUrl = null;
   function onRoute() {
+    // the IPD "care view" dashboard needs a module Bahmni Lite does not include: send old links to the ward screens
+    if (/\/bahmni\/adt/.test(location.pathname) && /careViewDashboard/.test(location.hash)) { location.replace('/bahmni/adt/#/patient/search'); return; }
     var id = pageId(), url = location.pathname + location.hash;
     if (id === lastPage) return;
     // page class on <html> lets the stylesheet apply phone fixes to specific screens only
