@@ -42,3 +42,29 @@ AI unit: 17 checks against a fake provider with explicit free-text opt-in. Trial
 The old docs/audit-support/reproduce.js is a historical defect reproducer. It is not a release gate; exit zero originally meant a defect was reproduced. Use the regression suites above for the new implementation.
 
 Executed locally after these changes: unit-ai 17/17, unit-trial 23/23; unit-privacy and unit-overlay passed. unit-ops passed parent-failure propagation, mocked IPv4/IPv6 TCP/UDP quarantine, complete/missing/corrupted backup fixtures and all shell parse checks. Its HTTP auth cases were explicitly skipped because this workstation has no jq. Changed JavaScript parses and git diff --check passed. No real provider request, cloud deployment, real firewall change, database restore or fresh trial acceptance run was performed.
+
+## Rollout record (28 Oct 2026, evening) — what the real-boot verification found
+
+Deployed to the main server first (add-on code, scripts, browser layer; free-text AI kept **on** for this fictional-data
+demo/trials by the owner's decision via `AI_ALLOW_FREE_TEXT=true`, code default stays off). The sealed image was then
+built on a disposable builder (`vipers-image-builder`, deleted afterwards) and verified with real reboots and external
+TCP/UDP probes from the main server, using a test listener on 80/tcp, 443/tcp and 443/udp with an auto-restart policy.
+
+The mocked unit tests passed, but the real boots exposed three problems, all fixed before the image was captured:
+
+1. **Docker places its own FORWARD jumps above ours when it starts.** With hooks only in INPUT/FORWARD, a reboot test
+   received 48 answers (TCP 80 and UDP 443 reached the listener). `trial-firewall.sh` now also creates `DOCKER-USER` before
+   Docker starts and hooks the quarantine there (Docker always evaluates DOCKER-USER first and never rewrites it).
+   After the fix: 234 TCP requests and 78 UDP packets across a hard reset, **0 answers**; drop counters 125 TCP / 19 UDP.
+2. **An empty or broken seal script reported success.** The seal unit now has `ExecStartPost` checks that the rules exist
+   (IPv4 and IPv6, including DOCKER-USER); a broken seal fails the unit and Docker does not start — verified: seal
+   "failed", "Dependency failed for docker.service", 0 containers.
+3. **Unit files written just before a crash/reset can be empty.** `prepare-trial-image.sh` now syncs and refuses empty
+   unit/helper files.
+
+Image `vipers-hospital-golden-v2` (family `vipers-hospital`, label `vipers-boot-sealed=v1`) also carries the In-Patient
+`enableIPDFeature=false` setting and the edge rule that injects the VIPERS layer into cached legacy pages.
+The main server's portal uses it (`TRIAL_IMAGE=vipers-hospital-golden-v2`).
+
+Also on the main server: the existing manifest-less `baseline` backup is refused by the new restore; a new baseline must be
+taken (`backup.sh baseline`) before `reset-demo.sh` can be used.

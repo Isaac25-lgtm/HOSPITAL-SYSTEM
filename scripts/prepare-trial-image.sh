@@ -9,6 +9,7 @@ for file in trial-firewall.sh auth-check.sh; do
     install -m 750 "$(dirname "$0")/$file" "$S/$file"
   fi
 done
+for file in trial-firewall.sh auth-check.sh; do [ -s "$S/$file" ] || { echo "$S/$file is missing or empty"; exit 1; }; done
 mkdir -p /etc/systemd/system/docker.service.d
 cat > /etc/systemd/system/vipers-boot-seal.service <<'EOF'
 [Unit]
@@ -19,6 +20,9 @@ Before=docker.service
 [Service]
 Type=oneshot
 ExecStart=/bin/bash /opt/vipers/scripts/trial-firewall.sh block
+# prove the quarantine exists (an empty or broken script must fail the seal, so Docker cannot start)
+ExecStartPost=/bin/sh -c 'iptables -w -S VIPERS-BOOT | grep -q "udp.*DROP" && iptables -w -S INPUT | grep -q VIPERS-BOOT && iptables -w -S FORWARD | grep -q VIPERS-BOOT && iptables -w -S DOCKER-USER | grep -q VIPERS-BOOT'
+ExecStartPost=/bin/sh -c 'ip6tables -w -S VIPERS-BOOT | grep -q "udp.*DROP" && ip6tables -w -S INPUT | grep -q VIPERS-BOOT && ip6tables -w -S DOCKER-USER | grep -q VIPERS-BOOT'
 RemainAfterExit=yes
 [Install]
 WantedBy=multi-user.target
@@ -28,10 +32,14 @@ cat > /etc/systemd/system/docker.service.d/vipers-seal.conf <<'EOF'
 Requires=vipers-boot-seal.service
 After=vipers-boot-seal.service
 EOF
+# flush the unit files to disk now: a crash/reset before writeback would leave them empty and Docker unsealed
+sync
+[ -s /etc/systemd/system/vipers-boot-seal.service ] && [ -s /etc/systemd/system/docker.service.d/vipers-seal.conf ] || { echo 'seal unit files empty'; exit 1; }
 systemctl daemon-reload
 systemctl enable vipers-boot-seal.service
 bash "$S/trial-firewall.sh" block
 systemctl start vipers-boot-seal.service
 systemctl is-active --quiet vipers-boot-seal.service
 touch /opt/vipers/boot-seal-v1
+sync
 echo 'Quarantine installed. Reboot/probe this builder, stop it, capture image, then label the VERIFIED image vipers-boot-sealed=v1.'

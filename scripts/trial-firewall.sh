@@ -9,7 +9,10 @@ for tool in iptables ip6tables; do
   command -v "$tool" >/dev/null || exit 1
   # One private chain; the hooks precede Docker forwarding rules and cover QUIC too.
   "$tool" -w -N VIPERS-BOOT 2>/dev/null || "$tool" -w -S VIPERS-BOOT >/dev/null
-  for chain in INPUT FORWARD; do
+  # Docker puts its own FORWARD jumps above ours when it starts, so FORWARD alone does not hold. DOCKER-USER is the
+  # chain Docker always evaluates first and never rewrites: create it before Docker starts and hook it there too.
+  "$tool" -w -N DOCKER-USER 2>/dev/null || "$tool" -w -S DOCKER-USER >/dev/null
+  for chain in INPUT FORWARD DOCKER-USER; do
     if [[ "$ACTION" = block ]]; then
       "$tool" -w -C "$chain" -i "$IFACE" -j VIPERS-BOOT 2>/dev/null || "$tool" -w -I "$chain" 1 -i "$IFACE" -j VIPERS-BOOT
     else
@@ -23,6 +26,6 @@ for tool in iptables ip6tables; do
       "$tool" -w -C VIPERS-BOOT -p "$proto" -m multiport --dports 80,443 -j DROP 2>/dev/null ||
         "$tool" -w -A VIPERS-BOOT -p "$proto" -m multiport --dports 80,443 -j DROP
     done
-    for chain in INPUT FORWARD; do "$tool" -w -C "$chain" -i "$IFACE" -j VIPERS-BOOT; done
+    for chain in INPUT FORWARD DOCKER-USER; do "$tool" -w -C "$chain" -i "$IFACE" -j VIPERS-BOOT; done
   fi
 done

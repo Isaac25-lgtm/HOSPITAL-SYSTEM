@@ -22,7 +22,7 @@ with tempfile.TemporaryDirectory(prefix='vipers-firewall-') as tmp:
     for tool in ['ip', 'iptables', 'ip6tables']:
         content = '#!/bin/bash\n'
         if tool == 'ip': content += 'echo "default via 10.0.0.1 dev eth0"\n'
-        else: content += 'echo "$(basename "$0") $*" >> "$FIREWALL_TEST_LOG"\nif [[ "$2" = -C ]]; then if [[ "$3" = INPUT || "$3" = FORWARD ]]; then grep -qF "$(basename "$0") -w -I $3 1" "$FIREWALL_TEST_LOG"; else grep -qF "$(basename "$0") -w -A VIPERS-BOOT -p $5" "$FIREWALL_TEST_LOG"; fi; else exit 0; fi\n'
+        else: content += 'echo "$(basename "$0") $*" >> "$FIREWALL_TEST_LOG"\nif [[ "$2" = -C ]]; then if [[ "$3" = INPUT || "$3" = FORWARD || "$3" = DOCKER-USER ]]; then grep -qF "$(basename "$0") -w -I $3 1" "$FIREWALL_TEST_LOG"; else grep -qF "$(basename "$0") -w -A VIPERS-BOOT -p $5" "$FIREWALL_TEST_LOG"; fi; else exit 0; fi\n'
         (d/tool).write_text(content, newline='\n'); (d/tool).chmod(0o755)
     log = d/'calls'
     script = 'export PATH="$1:$PATH" FIREWALL_TEST_LOG="$2"; bash "$3" block'
@@ -32,9 +32,10 @@ with tempfile.TemporaryDirectory(prefix='vipers-firewall-') as tmp:
     for tool in ['iptables', 'ip6tables']:
         for proto in ['tcp', 'udp']:
             assert f'{tool} -w -A VIPERS-BOOT -p {proto} -m multiport --dports 80,443 -j DROP' in calls
-        for chain in ['INPUT', 'FORWARD']:
+        # DOCKER-USER: Docker places its own FORWARD jumps above ours, so the hook must also live in DOCKER-USER
+        for chain in ['INPUT', 'FORWARD', 'DOCKER-USER']:
             assert f'{tool} -w -I {chain} 1 -i eth0 -j VIPERS-BOOT' in calls
-    print('PASS | quarantine covers IPv4/IPv6 INPUT/FORWARD TCP and UDP using mocked tools')
+    print('PASS | quarantine covers IPv4/IPv6 INPUT/FORWARD/DOCKER-USER TCP and UDP using mocked tools')
 
 with tempfile.TemporaryDirectory(prefix='vipers-ops-') as tmp:
     d = Path(tmp)
