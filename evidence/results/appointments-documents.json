@@ -1,0 +1,1 @@
+[{"step":"Create appointment (General Medicine OPD, in 2 days 10:00)","pass":true,"note":"booked; 27/10/2026, 10:00:00"},{"step":"Update appointment in UI persists (Check-in)","pass":true,"note":"booked -> checked-in"},{"step":"Upload patient document (fictional referral letter)","pass":true,"note":"[\"\"]"}]

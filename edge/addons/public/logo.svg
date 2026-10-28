@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 152 48" role="img" aria-label="VIPERS HOSPITAL">
+  <rect x="2" y="4" width="40" height="40" rx="10" fill="#0F766E"/>
+  <path d="M17 13h10v8h8v10h-8v8H17v-8H9V21h8z" fill="#fff"/>
+  <path d="M17 21l5 8 5-8" fill="none" stroke="#0F766E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="54" y="25" font-family="'IBM Plex Sans','Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="19" font-weight="700" letter-spacing="1.5" fill="#0F2E2B">VIPERS</text>
+  <text x="54" y="41" font-family="'IBM Plex Sans','Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="11" font-weight="500" letter-spacing="4.2" fill="#0F766E">HOSPITAL</text>
+</svg>

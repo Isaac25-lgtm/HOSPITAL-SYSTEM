@@ -1,0 +1,38 @@
+# VIPERS HOSPITAL edge services, layered on the official bahmni-lite compose project.
+services:
+  caddy:
+    build: /opt/vipers/edge/caddy
+    image: vipers/caddy:1
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    env_file: /opt/vipers/edge/edge.env
+    environment:
+      TZ: Africa/Kampala
+    volumes:
+      - /opt/vipers/edge/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - vipers-addons
+      - proxy
+
+  vipers-addons:
+    build: /opt/vipers/edge/addons
+    image: vipers/addons:1
+    restart: unless-stopped
+    env_file:
+      - /opt/vipers/edge/edge.env
+      - /opt/vipers/secrets/addons.env
+    environment:
+      TZ: Africa/Kampala
+    volumes:
+      - addons-data:/data
+      - /opt/vipers/edge/addons/public:/app/public:ro
+
+volumes:
+  caddy-data:
+  caddy-config:
+  addons-data:

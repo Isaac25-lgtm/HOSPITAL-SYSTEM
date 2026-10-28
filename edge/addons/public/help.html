@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VIPERS HOSPITAL Help</title>
+<link rel="icon" href="/vipers-assets/favicon.svg">
+<link rel="stylesheet" href="/vipers-assets/gate.css">
+<style>
+  body { place-items: start center; }
+  .card { max-width: 760px; margin: 24px 0; }
+  h2 { font-size: 16px; margin: 22px 0 4px; }
+  .tip { margin: 0 0 6px; color: #115e59; background: #ecfdf8; border-radius: 8px; padding: 6px 10px; font-size: 14px; }
+  ol { margin: 4px 0 0 20px; padding: 0; } li { margin: 3px 0; font-size: 14px; }
+  nav a { display: inline-block; margin: 0 10px 6px 0; font-size: 13px; color: #0f766e; }
+</style>
+</head>
+<body>
+<main class="card">
+  <img src="/vipers-assets/logo.svg" alt="VIPERS HOSPITAL" class="logo">
+  <p class="tag">DEMO ENVIRONMENT</p>
+  <h1>How to use VIPERS HOSPITAL</h1>
+  <p class="sub">Short step-by-step guides for each part of the system. Inside the application, the <b>?</b> button shows the guide for the screen you are on, and <b>Ask Vipers AI</b> answers "how do I&hellip;" questions.</p>
+  <nav id="toc"></nav>
+  <div id="guides">Loading&hellip;</div>
+  <footer>Demo configured by Motion Imprints Technologies &middot; <a href="/vipers-assets/about.html">About &amp; licences</a> &middot; <a href="/bahmni/home/">Back to VIPERS HOSPITAL</a></footer>
+</main>
+<script>
+fetch('/vipers-assets/help.json').then(r => r.json()).then(kb => {
+  const g = document.getElementById('guides'), toc = document.getElementById('toc');
+  g.textContent = '';
+  for (const [id, p] of Object.entries(kb.pages)) {
+    if (p.hideInGuide) continue;
+    const a = document.createElement('a'); a.href = '#' + id; a.textContent = p.title; toc.appendChild(a);
+    const h = document.createElement('h2'); h.id = id; h.textContent = p.title; g.appendChild(h);
+    if (p.tip) { const t = document.createElement('p'); t.className = 'tip'; t.textContent = p.tip; g.appendChild(t); }
+    const ol = document.createElement('ol');
+    (p.steps || []).forEach(s => { const li = document.createElement('li'); li.textContent = s; ol.appendChild(li); });
+    g.appendChild(ol);
+  }
+});
+</script>
+</body>
+</html>

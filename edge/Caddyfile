@@ -1,0 +1,134 @@
+# VIPERS HOSPITAL public edge. Hostnames come from /opt/vipers/edge/edge.env.
+{
+	order replace after encode
+	servers {
+		# HTTP/3 (QUIC) copes better with lossy/variable mobile and Wi-Fi links
+		protocols h1 h2 h3
+	}
+}
+
+# Browser caching for application code (never for patient files, data or the VIPERS layer).
+(vipers_cache) {
+	@hashed path_regexp hashed \.[0-9a-f]{8,}\.(?:js|css)$
+	header @hashed {
+		Cache-Control "public, max-age=31536000, immutable"
+		defer
+	}
+	@static {
+		path_regexp static \.(?:js|css|woff2?|ttf|eot|otf|png|jpe?g|gif|svg|ico)$
+		not path_regexp \.[0-9a-f]{8,}\.(?:js|css)$
+		not path /document_images/* /patient_images/* /uploaded_results/* /uploaded-files/* /openmrs/* /bahmni_config/* /vipers-assets/* /storage/*
+	}
+	header @static {
+		Cache-Control "public, max-age=86400"
+		defer
+	}
+	# Configuration (dashboards, forms, translations): revalidate on every load so config fixes reach browsers at once
+	@config path /bahmni_config/*
+	header @config {
+		Cache-Control "no-cache"
+		defer
+	}
+}
+
+(vipers_gate) {
+	forward_auth vipers-addons:8080 {
+		uri /vipers-gate/verify
+	}
+}
+
+# Add branding, help and Ask Vipers AI to HTML page loads only (browser navigations send Accept: text/html).
+(vipers_inject) {
+	# HTML documents only: some requests for scripts (e.g. prefetches) also send Accept: text/html
+	@page {
+		header Accept *text/html*
+		not path_regexp \.(?:js|mjs|css|json|map|png|jpe?g|gif|svg|ico|woff2?|ttf|eot|otf|pdf)$
+	}
+	replace @page {
+		"</head>" "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/vipers-assets/favicon.svg\"><link rel=\"stylesheet\" href=\"/vipers-assets/vipers.css\"><script defer src=\"/vipers-assets/vipers.js\"></script></head>"
+	}
+}
+
+(vipers_common) {
+	encode zstd gzip
+	header {
+		-Server
+		X-Robots-Tag "noindex, nofollow"
+		Strict-Transport-Security "max-age=31536000"
+		Referrer-Policy "same-origin"
+	}
+	handle /vipers-gate* {
+		reverse_proxy vipers-addons:8080
+	}
+	handle /vipers-assets/* {
+		reverse_proxy vipers-addons:8080
+	}
+	# hospital trial portal (open an account / log in); on hospital servers it redirects to their own sign-in
+	handle /vipers-trial* {
+		reverse_proxy vipers-addons:8080
+	}
+	handle /robots.txt {
+		respond "User-agent: *
+Disallow: /" 200
+	}
+}
+
+{$DEMO_HOSTS} {
+	import vipers_common
+	handle {
+		import vipers_gate
+		handle /vipers-ai/* {
+			reverse_proxy vipers-addons:8080
+		}
+		# Replace upstream favicons with the VIPERS mark
+		@favicon path /favicon.ico /bahmni/favicon.ico /bahmni-v2/favicon.ico
+		handle @favicon {
+			rewrite * /vipers-assets/favicon.svg
+			reverse_proxy vipers-addons:8080
+		}
+		# front door: the hospital trial portal (the shared demo stays at /bahmni/home/)
+		redir / /vipers-trial/ 302
+		# legacy OpenMRS admin (disabled in this release) and AtomFeed console (not deployed): send home
+		@unused path /openmrs/admin /openmrs/admin/* /atomfeed-console /atomfeed-console/*
+		redir @unused /bahmni-v2/home/ 302
+		# Lab Entry only renders at /lab/home; its own /lab -> /lab/home hop leaves a blank /lab/ in history
+		@labroot path /lab /lab/
+		redir @labroot /lab/home 302
+		handle {
+			import vipers_cache
+			import vipers_inject
+			reverse_proxy https://proxy:443 {
+				header_up Host {host}
+				header_up Accept-Encoding identity
+				header_down Location ^http://(.*)$ https://$1
+				header_up X-Forwarded-Proto https
+				transport http {
+					tls_insecure_skip_verify
+				}
+			}
+		}
+	}
+}
+
+{$BILLING_HOSTS} {
+	import vipers_common
+	handle {
+		import vipers_gate
+		handle /vipers-ai/* {
+			reverse_proxy vipers-addons:8080
+		}
+		handle {
+			import vipers_cache
+			import vipers_inject
+			reverse_proxy https://crater-nginx:443 {
+				header_up Host {host}
+				header_up Accept-Encoding identity
+				header_down Location ^http://(.*)$ https://$1
+				header_up X-Forwarded-Proto https
+				transport http {
+					tls_insecure_skip_verify
+				}
+			}
+		}
+	}
+}

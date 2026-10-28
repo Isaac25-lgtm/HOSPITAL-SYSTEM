@@ -1,0 +1,441 @@
+/* VIPERS HOSPITAL layer. Everything is scoped to #vipers-root except a few light brand accents. */
+#vipers-root { --vp-teal: #0f766e; --vp-teal-d: #115e59; --vp-teal-l: #ecfdf8; --vp-ink: #1f2937; --vp-muted: #6b7280; --vp-line: #e5e7eb;
+  font: 14px/1.45 "IBM Plex Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--vp-ink); }
+#vipers-root *, #vipers-root *::before { box-sizing: border-box; }
+#vipers-root button { font: inherit; cursor: pointer; }
+#vipers-root [hidden] { display: none !important; }
+
+/* demo badge (bottom-left, small) */
+#vipers-root .vp-badge { position: fixed; left: 10px; bottom: calc(10px + var(--vp-lift, 0px)); z-index: 2147483000; display: flex; gap: 8px; align-items: center;
+  background: rgba(255,255,255,.94); border: 1px solid var(--vp-line); border-radius: 999px; padding: 3px 10px 3px 4px; font-size: 11px; color: var(--vp-muted); }
+#vipers-root .vp-badge-tag { background: var(--vp-teal-l); color: var(--vp-teal); border-radius: 999px; padding: 1px 8px; font-weight: 600; letter-spacing: .08em; }
+#vipers-root .vp-badge-about { color: var(--vp-teal); text-decoration: none; }
+#vipers-root .vp-badge-about:hover { text-decoration: underline; }
+
+/* floating buttons (bottom-right) */
+#vipers-root .vp-fabs { position: fixed; right: 14px; bottom: calc(12px + var(--vp-lift, 0px)); z-index: 2147483000; display: flex; gap: 8px; align-items: center; }
+#vipers-root .vp-fab { height: 36px; border-radius: 999px; border: 1px solid var(--vp-line); background: #fff; color: var(--vp-teal);
+  box-shadow: 0 1px 3px rgba(0,0,0,.08); display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+#vipers-root .vp-help-btn { width: 36px; font-weight: 700; font-size: 16px; }
+#vipers-root .vp-ai-btn { padding: 0 14px; background: var(--vp-teal); border-color: var(--vp-teal); color: #fff; font-weight: 600; font-size: 13px; }
+#vipers-root .vp-fab:hover { filter: brightness(.96); }
+#vipers-root .vp-fab:focus-visible, #vipers-root button:focus-visible, #vipers-root input:focus-visible { outline: 2px solid var(--vp-teal); outline-offset: 2px; }
+
+/* panels */
+#vipers-root .vp-panel { position: fixed; right: 14px; bottom: calc(58px + var(--vp-lift, 0px)); z-index: 2147483001; width: 360px; max-width: calc(100vw - 28px);
+  max-height: min(520px, calc(100vh - 80px - var(--vp-lift, 0px))); display: flex; flex-direction: column; background: #fff; border: 1px solid var(--vp-line);
+  border-radius: 12px; box-shadow: 0 8px 28px rgba(15,46,43,.14); overflow: hidden; }
+#vipers-root .vp-panel header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--vp-line); }
+#vipers-root .vp-panel h2 { margin: 0; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 6px; color: var(--vp-ink); }
+#vipers-root .vp-panel h2 svg { color: var(--vp-teal); }
+#vipers-root .vp-x { border: 0; background: none; font-size: 20px; line-height: 1; color: var(--vp-muted); padding: 2px 6px; border-radius: 6px; }
+#vipers-root .vp-x:hover { background: #f3f4f6; }
+#vipers-root .vp-help { overflow-y: auto; }
+#vipers-root .vp-help .vp-tip { margin: 12px 14px 4px; padding: 8px 10px; background: var(--vp-teal-l); border-radius: 8px; color: var(--vp-teal-d); }
+#vipers-root .vp-help ol { margin: 8px 14px 8px 34px; padding: 0; }
+#vipers-root .vp-help li { margin: 4px 0; }
+#vipers-root .vp-more { margin: 4px 14px 14px; font-size: 13px; color: var(--vp-muted); }
+#vipers-root a { color: var(--vp-teal); }
+
+/* AI chat */
+#vipers-root .vp-log { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-height: 120px; }
+#vipers-root .vp-msg { max-width: 88%; padding: 8px 10px; border-radius: 10px; white-space: normal; word-wrap: break-word; }
+#vipers-root .vp-bot { background: #f3f6f6; align-self: flex-start; border-top-left-radius: 3px; }
+#vipers-root .vp-me { background: var(--vp-teal); color: #fff; align-self: flex-end; border-top-right-radius: 3px; }
+#vipers-root .vp-wait { color: var(--vp-muted); font-style: italic; }
+#vipers-root .vp-src { display: block; margin-top: 4px; font-size: 11px; color: var(--vp-muted); }
+#vipers-root .vp-suggest { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 8px; }
+#vipers-root .vp-chip { border: 1px solid #ccefe7; background: var(--vp-teal-l); color: var(--vp-teal-d); border-radius: 999px; padding: 4px 10px; font-size: 12px; }
+#vipers-root .vp-ask { display: flex; gap: 6px; padding: 10px 14px; border-top: 1px solid var(--vp-line); }
+#vipers-root .vp-ask input { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; }
+#vipers-root .vp-fine { margin: 0; padding: 0 14px 10px; font-size: 11px; color: var(--vp-muted); }
+
+/* buttons */
+#vipers-root .vp-primary { background: var(--vp-teal); color: #fff; border: 0; border-radius: 8px; padding: 7px 14px; font-weight: 600; }
+#vipers-root .vp-primary:hover { background: var(--vp-teal-d); }
+#vipers-root .vp-secondary { background: #fff; color: var(--vp-ink); border: 1px solid #cbd5e1; border-radius: 8px; padding: 7px 14px; }
+#vipers-root .vp-link { background: none; border: 0; color: var(--vp-muted); text-decoration: underline; padding: 7px 6px; }
+
+/* quick tip */
+#vipers-root .vp-toast { position: fixed; left: 10px; bottom: calc(46px + var(--vp-lift, 0px)); z-index: 2147483000; width: 320px; max-width: calc(100vw - 28px);
+  background: #fff; border: 1px solid var(--vp-line); border-left: 3px solid var(--vp-teal); border-radius: 10px; padding: 10px 12px;
+  box-shadow: 0 6px 20px rgba(15,46,43,.12); display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+#vipers-root .vp-toast strong { color: var(--vp-teal); font-size: 12px; letter-spacing: .04em; }
+#vipers-root .vp-toast-actions { display: flex; gap: 6px; justify-content: flex-end; }
+#vipers-root .vp-toast-actions button:first-child { background: var(--vp-teal); color: #fff; border: 0; border-radius: 6px; padding: 4px 10px; }
+
+/* walkthrough */
+#vipers-root .vp-overlay { position: fixed; inset: 0; z-index: 2147483002; background: rgba(15,23,42,.35); display: grid; place-items: center; padding: 16px; }
+#vipers-root .vp-tour { width: 100%; max-width: 440px; background: #fff; border-radius: 12px; padding: 22px 22px 16px; box-shadow: 0 12px 40px rgba(0,0,0,.2); }
+#vipers-root .vp-tour h2 { margin: 2px 0 8px; font-size: 18px; font-weight: 600; }
+#vipers-root .vp-tour p { margin: 0 0 12px; color: #374151; }
+#vipers-root .vp-step { font-size: 12px; color: var(--vp-teal) !important; font-weight: 600; letter-spacing: .04em; }
+#vipers-root .vp-tour-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+#vipers-root .vp-grow { flex: 1; }
+#vipers-root .vp-check { font-size: 12px; color: var(--vp-muted); display: inline-flex; gap: 4px; align-items: center; }
+
+/* compact mode inside data-entry forms */
+#vipers-root.vp-compact .vp-ai-btn span { display: none; }
+#vipers-root.vp-compact .vp-ai-btn { width: 36px; padding: 0; }
+#vipers-root.vp-compact .vp-badge-note { display: none; }
+
+/* small screens: keep the layer out of the way */
+@media (max-width: 640px) {
+  #vipers-root .vp-badge-note { display: none; }
+  #vipers-root .vp-ai-btn span { display: none; }
+  #vipers-root .vp-ai-btn { width: 36px; padding: 0; }
+  #vipers-root .vp-panel { right: 8px; left: 8px; width: auto; max-width: none; bottom: calc(56px + var(--vp-lift, 0px)); }
+}
+@media print { #vipers-root { display: none !important; } }
+
+/* consultation pad / form action bars (Cancel|Done, Discard|Save Form) must stay above scrolled form content
+   (the content section is positioned and later in the DOM, so on short/narrow screens it painted over the bar) */
+.cds--btn-set[class*="_buttonSet_"] { z-index: 20 !important; }
+
+/* ---------- phone layout fixes for the Bahmni 2.0 (Carbon/React) screens; desktop is unaffected ---------- */
+@media (max-width: 640px) {
+  /* header: logo mark only, current page only, icon-only user menu */
+  #vp-brand { padding: 0 8px; }
+  #vp-brand img { content: url(/vipers-assets/mark-white.svg); height: 28px; width: 28px; }
+  #vp-hdr-badge { margin: 0 4px; }
+  .cds--header nav[class*="_breadcrumb_"] { min-width: 0; overflow: hidden; }
+  .cds--header nav[class*="_breadcrumb_"] li:not(:last-child) { display: none; }
+  .cds--header nav[class*="_breadcrumb_"] li:last-child, .cds--header nav[class*="_breadcrumb_"] a { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 42vw; }
+  .cds--header__global { flex: 0 1 auto !important; min-width: 0 !important; width: auto !important; }
+  .cds--header__global .cds--dropdown, .cds--header__global .cds--list-box__wrapper { display: none !important; }
+  #user-global-action-button, [class*="UserGlobalAction-module_container"] button { font-size: 0 !important; padding: 0 12px !important; min-width: 0 !important; }
+  #user-global-action-button svg, [class*="UserGlobalAction-module_container"] button svg { width: 20px; height: 20px; }
+  #user-global-action-button span, [class*="UserGlobalAction-module_container"] button span { display: none !important; }
+  .cds--header nav[class*="_breadcrumb_"] li:last-child, .cds--header nav[class*="_breadcrumb_"] a { max-width: 30vw; }
+  main.cds--content { padding-left: 10px !important; padding-right: 10px !important; }
+
+  /* registration (create / edit patient): one column, full-width fields and buttons */
+  html.vp-page-registration [class*="styles_formContainer__"], html.vp-page-registration-edit [class*="styles_formContainer__"],
+  html.vp-page-registration [class*="styles_formActions__"], html.vp-page-registration-edit [class*="styles_formActions__"] {
+    margin-left: 0 !important; margin-right: 0 !important; max-width: 100% !important; width: 100% !important; flex-wrap: wrap !important; }
+  html.vp-page-registration [class*="styles_formSection__"], html.vp-page-registration-edit [class*="styles_formSection__"] {
+    flex-wrap: wrap !important; padding-left: 0 !important; width: 100% !important; }
+  html.vp-page-registration [class*="styles_row__"], html.vp-page-registration-edit [class*="styles_row__"] { flex-wrap: wrap !important; width: 100% !important; }
+  html.vp-page-registration [class*="styles_row__"] > *, html.vp-page-registration-edit [class*="styles_row__"] > *,
+  html.vp-page-registration [class*="styles_col__"], html.vp-page-registration-edit [class*="styles_col__"] {
+    flex: 1 1 100% !important; width: 100% !important; max-width: 100% !important; min-width: 0 !important; }
+  html.vp-page-registration [class*="styles_actionButtons__"], html.vp-page-registration-edit [class*="styles_actionButtons__"] {
+    flex-wrap: wrap !important; gap: 8px; width: 100% !important; }
+  html.vp-page-registration [class*="styles_actionButtons__"] > *, html.vp-page-registration-edit [class*="styles_actionButtons__"] > *,
+  html.vp-page-registration [class*="styles_formActions__"] > *, html.vp-page-registration-edit [class*="styles_formActions__"] > * {
+    flex: 1 1 100% !important; max-width: 100% !important; width: 100% !important; }
+  /* when stacked, the Print Registration Card wrapper (holds a hidden print template) overlaps the next button:
+     let wrappers pass taps through, buttons and menus still receive them */
+  html.vp-page-registration [class*="styles_actionButtons__"] div, html.vp-page-registration-edit [class*="styles_actionButtons__"] div { pointer-events: none; }
+  html.vp-page-registration [class*="styles_actionButtons__"] :is(button, a, [role=menu], [role=menuitem], ul, li),
+  html.vp-page-registration-edit [class*="styles_actionButtons__"] :is(button, a, [role=menu], [role=menuitem], ul, li) { pointer-events: auto; }
+
+  /* clinical dashboard: fit the content panel, wrap the action buttons, scroll wide tables inside their card */
+  [class*="_panelGroup_"] { max-width: calc(100vw - 48px) !important; }
+  /* consultation pad: pinned forms (Vitals, History and Examination) in one column */
+  [class*="_formsGrid_"] { grid-template-columns: 1fr !important; }
+  [class*="_formCard_"] { width: auto !important; max-width: 100% !important; }
+  /* the last pad item must be able to scroll above the fixed Cancel | Done bar */
+  [class*="_formCardContainer_"] { padding-bottom: 88px !important; }
+  [class*="PatientHeader_actionButtons"] { flex-wrap: wrap !important; gap: 6px; }
+  [class*="PatientHeader_actionButtons"] > * { flex: 1 1 100% !important; max-width: 100% !important; }
+  .cds--data-table-content, .cds--data-table-container { overflow-x: auto !important; max-width: 100% !important; }
+  html.vp-page-patient-dashboard table.cds--data-table, html.vp-page-consultation table.cds--data-table { display: block; overflow-x: auto; max-width: 100%; }
+}
+
+/* lets the last row of page buttons scroll clear of the floating Help / AI buttons */
+#vipers-spacer { height: 64px; clear: both; }
+.vp-scroll-pad { padding-bottom: 64px !important; }
+
+/* light brand accent on upstream logos we replaced */
+img.vipers-logo-img { object-fit: contain; }
+
+/* Crater (billing) uses RGB-triplet CSS variables for its theme: swap purple for VIPERS teal */
+html.vp-billing {
+  --color-primary-50: 240, 250, 248; --color-primary-100: 204, 240, 235; --color-primary-200: 153, 226, 215;
+  --color-primary-300: 94, 190, 180; --color-primary-400: 20, 150, 140; --color-primary-500: 15, 118, 110;
+  --color-primary-600: 17, 94, 89;   --color-primary-700: 19, 78, 74;   --color-primary-800: 16, 64, 60;
+  --color-primary-900: 12, 45, 42;
+}
+html.vp-billing img.vipers-logo-img { max-height: 36px; width: auto; }
+/* Crater's header brand is an inline SVG: replace it with the white VIPERS wordmark */
+html.vp-billing a.brand-main svg { display: none; }
+html.vp-billing a.brand-main::before { content: ""; display: block; width: 128px; height: 40px;
+  background: url(/vipers-assets/logo-white.svg) no-repeat left center / contain; }
+
+/* DEMO label inside app headers (replaces the bottom-left badge there) */
+#vp-hdr-badge { align-self: center; margin: 0 10px; padding: 2px 9px; border-radius: 999px; border: 1px solid rgba(255,255,255,.45);
+  color: #fff !important; font: 600 10px/1.5 "IBM Plex Sans", "Segoe UI", Arial, sans-serif; letter-spacing: .1em; text-decoration: none; white-space: nowrap; }
+#vp-hdr-badge:hover { background: rgba(255,255,255,.12); }
+#vipers-root.vp-has-header .vp-badge { display: none; }
+@media (max-width: 640px) { #vp-hdr-badge { font-size: 0; padding: 2px 6px; } #vp-hdr-badge::after { content: "DEMO"; font-size: 10px; } }
+
+/* wordmark in the Carbon header */
+#vp-brand { display: inline-flex; align-items: center; height: 100%; padding: 0 12px 0 14px; border-right: 1px solid rgba(255,255,255,.25); }
+#vp-brand img { height: 30px; width: auto; display: block; }
+@media (max-width: 640px) { #vp-brand img { height: 24px; } }
+
+/* One-click demo sign-in cards (login pages); the stock form stays in the page for the card to submit */
+form[name=loginForm].vp-cards-mode:not(.vp-manual) .form-field,
+form[name=loginForm].vp-cards-mode:not(.vp-manual) .form-footer,
+.vp-billing form.vp-cards-mode:not(.vp-manual) > :not(.vp-cards) { display: none !important; }
+.vp-cards { margin: 4px 0 14px; box-sizing: border-box; font-family: "IBM Plex Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+.login-body .vp-cards { margin: 0; padding: 16px 20px 6px; }
+.vp-cards .vp-cards-head { margin: 0 0 10px; font-size: 15px; font-weight: 600; color: #1f2937; }
+.vp-cards .vp-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.vp-cards .vp-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin: 0; padding: 12px 14px; min-height: 76px; width: 100%;
+  text-align: left; text-transform: none; letter-spacing: normal; font: inherit; color: #1f2937; background: #fff; border: 1px solid #d1d5db;
+  border-left: 4px solid #0f766e; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,.05); cursor: pointer; }
+.vp-cards .vp-card:hover, .vp-cards .vp-card:focus-visible { background: #ecfdf8; border-color: #0f766e; outline: none; }
+.vp-cards .vp-card:disabled { opacity: .55; cursor: wait; }
+.vp-cards .vp-card-title { font-size: 16px; font-weight: 600; color: #115e59; }
+.vp-cards .vp-card-desc { font-size: 12.5px; line-height: 1.35; color: #6b7280; white-space: normal; }
+.vp-cards .vp-cards-status { min-height: 18px; margin: 8px 0 0; font-size: 13px; color: #0f766e; }
+.vp-cards .vp-cards-manual { display: inline-block; margin-top: 4px; font-size: 12px; color: #6b7280; }
+@media (max-width: 480px) { .vp-cards .vp-card-grid { grid-template-columns: 1fr; } .vp-cards .vp-card { min-height: 0; } }
+
+/* 2.0 screens: Carbon dropdown menus were as narrow as their field, so options read "An...", "Mod..." */
+html:not(.vp-billing) .cds--list-box__menu:not([style*="position: fixed"]) { min-width: 100%; }
+html:not(.vp-billing) .cds--list-box__menu[style*="position: fixed"] { min-width: 240px !important; max-width: 90vw; }
+html:not(.vp-billing) .cds--list-box__menu-item { height: auto; min-height: 2.5rem; }
+html:not(.vp-billing) .cds--list-box__menu-item__option,
+html:not(.vp-billing) .cds--list-box__menu-item__option .cds--checkbox-label-text { white-space: normal; overflow: visible; text-overflow: clip; height: auto; }
+html:not(.vp-billing) [class*=selectedAllergySeverity] { min-width: 132px; }
+html:not(.vp-billing) [class*=selectedAllergySeverity] .cds--list-box__field { padding-left: .75rem; padding-right: 2rem; }
+/* keep the VIPERS buttons from covering an open dropdown */
+body:has(.cds--list-box--expanded) #vipers-root .vp-fabs { opacity: .15; pointer-events: none; }
+/* Lab Entry uses Carbon v10 (bx- prefix): same narrow, truncated dropdown options */
+.bx--list-box__menu { width: max-content; min-width: 100%; max-width: min(320px, 92vw); }
+.bx--list-box__menu-item { height: auto; min-height: 2.5rem; }
+.bx--list-box__menu-item__option { white-space: normal; overflow: visible; text-overflow: clip; height: auto; }
+body:has(.bx--list-box--expanded, .bx--dropdown--open) #vipers-root .vp-fabs { opacity: .15; pointer-events: none; }
+
+/* loading hint from first paint until vipers.js sees real content (html.vp-ready); fades out by itself after 30 s */
+html:not(.vp-ready)::after { content: "Loading VIPERS HOSPITAL\2026"; position: fixed; left: 50%; top: 58%; transform: translateX(-50%); z-index: 2147482999;
+  padding: 10px 18px; background: #fff; border: 1px solid #e5e7eb; border-radius: 999px; box-shadow: 0 2px 8px rgba(0,0,0,.08);
+  color: #0f766e; font: 600 14px/1.4 "IBM Plex Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; pointer-events: none;
+  animation: vp-hint-off 0s linear 30s forwards; }
+@keyframes vp-hint-off { to { visibility: hidden; opacity: 0; } }
+
+/* Billing (desktop): the bottom-right buttons covered invoice totals and line delete icons; put them in the empty header area */
+@media (min-width: 900px) {
+  .vp-billing #vipers-root .vp-fabs { top: 14px; bottom: auto; right: auto; left: 260px; }
+  .vp-billing #vipers-root .vp-panel { bottom: auto; top: 62px; right: auto; left: 260px; }
+}
+.vp-billing-login-logo { display: block; width: 220px; max-width: 100%; height: auto; margin-bottom: 2rem; }
+/* phones: the sign-in pages end at the bottom of the screen, under the badge and ?/AI buttons (the Login
+   button of the manual form could not be tapped); leave room so everything scrolls clear of them */
+@media (max-width: 640px) {
+  html.vp-page-billing-login body { padding-bottom: 96px !important; }
+  html.vp-page-login .login { position: relative !important; top: auto !important; left: auto !important; right: auto !important;
+    transform: none !important; height: auto !important; margin: 12px auto 170px !important; }
+}
+
+/* ======================= VIPERS theme (28 Oct 2026 redesign) ======================= */
+:root { --vt-teal: #0f766e; --vt-teal-d: #0b5f58; --vt-ink: #0f2a37; --vt-muted: #5b6b7a; --vt-line: #e2ecec;
+  --vt-bg: radial-gradient(640px 420px at 0% 0%, rgba(15,118,110,.09), transparent 70%),
+           radial-gradient(760px 520px at 100% 100%, rgba(15,118,110,.11), transparent 70%),
+           radial-gradient(520px 320px at 92% 8%, rgba(37,99,235,.05), transparent 70%),
+           linear-gradient(180deg, #f6fafa 0%, #edf5f4 100%);
+  --vt-nature: #eef6f3 url(/vipers-assets/nature-bg.svg) center bottom / cover no-repeat; }
+
+/* --- Home (2.0): soft background, faint cross and dots --- */
+main[class*="HomePage_homePageBody"] { background: var(--vt-nature) !important; min-height: calc(100vh - 48px); position: relative; overflow: hidden; }
+main[class*="HomePage_homePageBody"]::before { content: ""; position: absolute; left: 3%; bottom: 8%; width: 150px; height: 150px; opacity: .08; pointer-events: none;
+  background: linear-gradient(var(--vt-teal), var(--vt-teal)) center / 48px 100% no-repeat, linear-gradient(var(--vt-teal), var(--vt-teal)) center / 100% 48px no-repeat; }
+main[class*="HomePage_homePageBody"]::after { content: ""; position: absolute; right: 4%; top: 46%; width: 120px; height: 100px; opacity: .35; pointer-events: none;
+  background: radial-gradient(circle, #9fc9c4 1.6px, transparent 2px) 0 0 / 20px 20px; }
+[class*="HomePageGrid_container"] { padding: 56px 24px 110px !important; display: flex !important; justify-content: center; position: relative; z-index: 1; }
+[class*="HomePageGrid_tileGrid"] { display: flex !important; flex-wrap: wrap; justify-content: center; gap: 28px !important; max-width: 1080px; width: 100%; }
+
+/* --- Home tiles: white card, tinted icon tile, round arrow, decorative circles --- */
+a[class*="AppTile_tile"] { --c: var(--vt-teal); --t: #dff3f0;
+  position: relative; overflow: hidden; width: 300px !important; max-width: 100%; min-height: 196px !important; height: auto !important; margin: 0 !important;
+  display: grid !important; grid-template-columns: 1fr auto; grid-template-rows: 1fr auto; grid-template-areas: "icon ." "label arrow";
+  align-items: end; gap: 18px 12px; padding: 26px 24px 24px !important; text-decoration: none !important;
+  background: #fff !important; border: 1px solid var(--vt-line) !important; border-radius: 20px !important;
+  box-shadow: 0 1px 2px rgba(15,42,55,.04), 0 14px 34px -14px rgba(15,118,110,.22) !important; transition: transform .18s ease, box-shadow .18s ease; }
+a[class*="AppTile_tile"]::before { content: ""; position: absolute; top: -78px; right: -78px; width: 190px; height: 190px; border-radius: 50%; pointer-events: none;
+  background: var(--t); opacity: .75; box-shadow: 0 0 0 30px color-mix(in srgb, var(--t) 45%, transparent); }
+a[class*="AppTile_tile"]:hover, a[class*="AppTile_tile"]:focus-visible { transform: translateY(-3px); box-shadow: 0 2px 4px rgba(15,42,55,.05), 0 20px 42px -16px rgba(15,118,110,.32) !important; }
+a[class*="AppTile_tile"] [class*="AppTile_bottom"] { display: contents !important; }
+a[class*="AppTile_tile"] h2[class*="AppTile_label"] { grid-area: label; margin: 0 !important; position: relative; z-index: 1;
+  font: 700 20px/1.25 "IBM Plex Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important; color: var(--vt-ink) !important; letter-spacing: 0; }
+a[class*="AppTile_tile"] [class*="AppTile_bottom"] > span { grid-area: icon; justify-self: start; align-self: start; position: relative; z-index: 1;
+  width: 68px; height: 68px; display: flex !important; align-items: center; justify-content: center; padding: 0 !important; border-radius: 18px; background: var(--t); color: var(--c) !important; }
+a[class*="AppTile_tile"] [class*="AppTile_bottom"] > span svg { width: 30px !important; height: 30px !important; color: var(--c) !important; }
+a[class*="AppTile_tile"] [class*="AppTile_bottom"] > svg { grid-area: arrow; position: relative; z-index: 1; width: 44px !important; height: 44px !important; padding: 12px;
+  border-radius: 50%; background: var(--t); color: var(--c) !important; fill: var(--c) !important; transition: transform .18s ease; }
+a[class*="AppTile_tile"]:hover [class*="AppTile_bottom"] > svg { transform: translateX(3px); }
+a[data-testid$="registration.new"], a[data-testid$="bahmni.registration"] { --c: #0f766e; --t: #dcf2ee; }
+a[data-testid$="clinical"]               { --c: #2563eb; --t: #e2ecff; }
+a[data-testid$="reports"]                { --c: #6d28d9; --t: #ece6fe; }
+a[data-testid$="implementer.interface"]  { --c: #4338ca; --t: #e5e7fb; }
+a[data-testid$="bahmni.lab"]             { --c: #0e7490; --t: #daf2f7; }
+a[data-testid$="admin"]                  { --c: #334155; --t: #e6ebf1; }
+a[data-testid$="document.upload"]        { --c: #c2410c; --t: #ffe8d6; }
+a[data-testid$="appointment.scheduling"] { --c: #be123c; --t: #ffe2e7; }
+a[data-testid$="vipers.billing"]         { --c: #15803d; --t: #dbf4e2; }
+a[data-testid$="adt"]                    { --c: #b45309; --t: #fdeccf; }
+@media (max-width: 700px) {
+  [class*="HomePageGrid_container"] { padding: 24px 16px 110px !important; }
+  [class*="HomePageGrid_tileGrid"] { gap: 16px !important; }
+  a[class*="AppTile_tile"] { width: 100% !important; min-height: 140px !important; padding: 20px !important; }
+  a[class*="AppTile_tile"] [class*="AppTile_bottom"] > span { width: 56px; height: 56px; border-radius: 15px; }
+}
+
+/* natural background replaces the faint cross / dots decorations */
+main[class*="HomePage_homePageBody"]::before, main[class*="HomePage_homePageBody"]::after { content: none !important; }
+/* --- 2.0 header --- */
+html:not(.vp-billing) .cds--header { background: linear-gradient(90deg, #0d6b63 0%, #0f766e 45%, #0b5f58 100%) !important; border-bottom: 0 !important; box-shadow: 0 2px 12px rgba(11,95,88,.22); }
+
+/* --- Sign-in page --- */
+html.vp-page-login body { background: var(--vt-nature) !important; background-attachment: fixed !important; }
+html.vp-page-login .login { background: #fff !important; border: 1px solid var(--vt-line) !important; border-radius: 22px !important;
+  box-shadow: 0 2px 6px rgba(15,42,55,.04), 0 28px 60px -28px rgba(15,118,110,.40) !important; }
+html.vp-page-login .login .reg-header { background: linear-gradient(90deg, #0f766e, #0b5f58) !important; border: 0 !important; border-radius: 21px 21px 0 0; }
+html.vp-page-login .login { height: auto !important; max-height: none !important; }
+html.vp-page-login #locale { background: #fff !important; color: var(--vt-ink) !important; border: 0 !important; border-radius: 8px !important; min-width: 110px; height: 32px; padding: 0 8px; }
+html.vp-page-login .title_text, html.vp-page-login .emr-login-text { color: var(--vt-ink) !important; }
+.vp-cards .vp-card { border-radius: 14px; border-left-width: 1px; border-color: var(--vt-line); box-shadow: 0 6px 18px -12px rgba(15,118,110,.35); transition: transform .15s ease, box-shadow .15s ease; }
+.vp-cards .vp-card:hover { transform: translateY(-2px); box-shadow: 0 12px 26px -14px rgba(15,118,110,.45); background: #f3fbfa; }
+.vp-cards .vp-card-title { color: var(--vt-ink); font-size: 17px; }
+html.vp-page-login .login .confirm { background: var(--vt-teal) !important; border-color: var(--vt-teal) !important; border-radius: 10px !important; }
+
+/* --- Older-generation screens (Clinical list, In-Patient, Admin, Reports, Appointments): same look as 2.0 --- */
+html:not(.vp-billing) body:has(.opd-header-wrapper), html:not(.vp-billing) body:has(.dashboard .apps) { background-color: #f4f8f8 !important; }
+html:not(.vp-billing) .opd-header-wrapper, html:not(.vp-billing) .opd-header-wrapper > header, html:not(.vp-billing) .opd-header-wrapper header {
+  background: linear-gradient(90deg, #0d6b63 0%, #0f766e 45%, #0b5f58 100%) !important; border: 0 !important; }
+html:not(.vp-billing) .opd-header-wrapper { box-shadow: 0 2px 12px rgba(11,95,88,.22); }
+html:not(.vp-billing) .opd-header-wrapper .back-btn { background: rgba(255,255,255,.14) !important; border-radius: 10px !important; margin: 4px !important; }
+html:not(.vp-billing) .opd-header-wrapper .back-btn:hover { background: rgba(255,255,255,.24) !important; }
+/* panels and their title bars (e.g. ward bars, Reports, Vitals) */
+html:not(.vp-billing) .section-grid { background: #fff !important; border: 1px solid var(--vt-line) !important; border-radius: 14px !important; box-shadow: 0 10px 28px -20px rgba(15,118,110,.40); margin-bottom: 14px !important; }
+html:not(.vp-billing) .section-title { background: linear-gradient(90deg, #0f766e, #128a80) !important; color: #fff !important; border: 0 !important; border-radius: 13px 13px 0 0 !important; }
+html:not(.vp-billing) .section-grid > .section-title:only-child { border-radius: 13px !important; }
+/* tabs */
+html:not(.vp-billing) .tab-item > a { background: #e4f1ef !important; color: var(--vt-teal-d) !important; border: 0 !important; border-radius: 10px 10px 0 0 !important; font-weight: 600; }
+html:not(.vp-billing) .tab-item > a:hover { background: #d3e9e6 !important; }
+html:not(.vp-billing) .tab-item.tab-selected > a, html:not(.vp-billing) .tab-item.active > a, html:not(.vp-billing) .tab-item > a.active { background: var(--vt-teal) !important; color: #fff !important; }
+/* buttons: lime green -> brand teal */
+html:not(.vp-billing) button.confirm, html:not(.vp-billing) input.confirm, html:not(.vp-billing) a.confirm, html:not(.vp-billing) .button.confirm {
+  background: var(--vt-teal) !important; background-image: none !important; border: 1px solid var(--vt-teal) !important; color: #fff !important;
+  border-radius: 8px !important; text-shadow: none !important; box-shadow: 0 2px 6px -2px rgba(15,118,110,.45) !important; }
+html:not(.vp-billing) button.confirm:hover, html:not(.vp-billing) a.confirm:hover { background: var(--vt-teal-d) !important; border-color: var(--vt-teal-d) !important; }
+/* patient tiles (Clinical / Lab / In-Patient lists) */
+html:not(.vp-billing) li.active-patient { background: #fff !important; border: 1px solid var(--vt-line) !important; border-radius: 14px !important; margin: 6px !important;
+  box-shadow: 0 8px 20px -16px rgba(15,118,110,.5); transition: transform .15s ease, box-shadow .15s ease; }
+html:not(.vp-billing) li.active-patient:hover { transform: translateY(-2px); box-shadow: 0 14px 26px -16px rgba(15,118,110,.55); border-color: #bfe0db !important; }
+/* Admin dashboard tiles */
+html:not(.vp-billing) .dashboard .apps li > a { background: #fff !important; border: 1px solid var(--vt-line) !important; border-radius: 18px !important;
+  box-shadow: 0 1px 2px rgba(15,42,55,.04), 0 14px 30px -16px rgba(15,118,110,.30) !important; color: var(--vt-ink) !important; transition: transform .15s ease, box-shadow .15s ease; }
+html:not(.vp-billing) .dashboard .apps li > a:hover { transform: translateY(-3px); box-shadow: 0 18px 36px -16px rgba(15,118,110,.38) !important; }
+html:not(.vp-billing) .dashboard .apps li > a i, html:not(.vp-billing) .dashboard .apps li > a .fa { color: var(--vt-teal) !important; }
+/* inputs */
+html:not(.vp-billing) input[type=text]:focus, html:not(.vp-billing) input[type=search]:focus, html:not(.vp-billing) select:focus { outline: 2px solid rgba(15,118,110,.35) !important; outline-offset: 1px; border-color: var(--vt-teal) !important; }
+
+/* --- 2.0 screens: patient dashboard sections as cards, side menu, primary buttons --- */
+html:not(.vp-billing) [class*="DashboardContainer_sectionContainer"] { background: #f4f8f8 !important; }
+html:not(.vp-billing) [class*="DashboardSection_sectionWrapper"] { background: #fff; border: 1px solid var(--vt-line); border-radius: 16px; overflow: hidden;
+  box-shadow: 0 10px 28px -22px rgba(15,118,110,.45); margin-bottom: 16px; }
+html:not(.vp-billing) .cds--side-nav__link[aria-current="page"], html:not(.vp-billing) .cds--side-nav__link--current {
+  background: #e4f1ef !important; box-shadow: inset 4px 0 0 var(--vt-teal); }
+html:not(.vp-billing) .cds--side-nav__link[aria-current="page"] .cds--side-nav__link-text, html:not(.vp-billing) .cds--side-nav__link--current .cds--side-nav__link-text { color: var(--vt-teal-d) !important; font-weight: 600; }
+html:not(.vp-billing) .cds--btn--primary:not(:disabled):not(.cds--btn--disabled), html:not(.vp-billing) .bx--btn--primary:not(:disabled):not(.bx--btn--disabled) { background-color: var(--vt-teal) !important; border-color: transparent !important; }
+html:not(.vp-billing) .cds--btn--primary:not(:disabled):hover, html:not(.vp-billing) .bx--btn--primary:not(:disabled):hover { background-color: var(--vt-teal-d) !important; }
+html:not(.vp-billing) .cds--btn--primary:focus, html:not(.vp-billing) .bx--btn--primary:focus { box-shadow: inset 0 0 0 1px #fff, 0 0 0 2px rgba(15,118,110,.45) !important; border-color: transparent !important; }
+.vp-adt-dx { margin: 0; padding: 4px 0 4px 18px; list-style: disc; color: var(--vt-ink); } .vp-adt-dx li { margin: 2px 0; }
+
+/* --- In-Patient: bed layout tiles (were bright lime) --- */
+html:not(.vp-billing) .bed-assignment li.col { border-radius: 14px !important; border: 1px solid #bfe6d2 !important; background-color: #e5f6ee !important;
+  background-size: 40px auto !important; background-position: center 9px !important; box-shadow: 0 6px 16px -12px rgba(15,118,110,.55) !important; transition: transform .15s ease, box-shadow .15s ease; }
+html:not(.vp-billing) .bed-assignment li.col:hover { transform: translateY(-2px); box-shadow: 0 12px 22px -14px rgba(15,118,110,.6) !important; }
+html:not(.vp-billing) .bed-assignment li.col.occupied, html:not(.vp-billing) .bed-assignment li.col[class*="occupied"], html:not(.vp-billing) .bed-assignment li.col.not-available {
+  background-color: #fdeccf !important; border-color: #f2d29b !important; }
+html:not(.vp-billing) .bed-assignment .bed-number { font-weight: 700; color: var(--vt-ink); }
+html:not(.vp-billing) .bed-assignment .bed-type { color: var(--vt-muted); }
+html:not(.vp-billing) .bed-assignment h2, html:not(.vp-billing) .bed-assignment .ward-name { color: var(--vt-teal) !important; font-weight: 600; }
+#vipers-root .vp-chip-explain { background: var(--vp-teal) !important; color: #fff !important; border-color: var(--vp-teal) !important; font-weight: 600; }
+
+/* --- In-Patient patient page (admit / transfer / discharge) and other older-screen forms --- */
+html:not(.vp-billing) .adt .box { background: #fff !important; border: 1px solid var(--vt-line) !important; border-radius: 16px !important; padding: 16px 18px !important;
+  box-shadow: 0 10px 28px -22px rgba(15,118,110,.45); }
+html:not(.vp-billing) .dashboard-section { background: #fff !important; border: 1px solid var(--vt-line) !important; border-radius: 14px !important; overflow: hidden;
+  box-shadow: 0 10px 28px -22px rgba(15,118,110,.45); margin-bottom: 14px !important; }
+html:not(.vp-billing) .dashboard-section .section-title { border-radius: 0 !important; }
+html:not(.vp-billing) button.admit_btn { border-radius: 10px !important; padding: 8px 18px !important; font-weight: 600; text-shadow: none !important; box-shadow: none !important;
+  background: #fff !important; background-image: none !important; color: var(--vt-teal-d) !important; border: 1px solid #b9dcd7 !important; margin-left: 8px; }
+html:not(.vp-billing) button.admit_btn:not(.vp-secondary) { background: var(--vt-teal) !important; color: #fff !important; border-color: var(--vt-teal) !important; box-shadow: 0 4px 12px -6px rgba(15,118,110,.6) !important; }
+html:not(.vp-billing) button.admit_btn:not(.vp-secondary):hover { background: var(--vt-teal-d) !important; }
+html:not(.vp-billing) .navigation-links-wrapper a.title-link { display: inline-block; padding: 5px 12px !important; margin: 3px 2px; border-radius: 999px !important;
+  background: #e8f4f2; color: var(--vt-teal-d) !important; text-decoration: none !important; border: 0 !important; }
+html:not(.vp-billing) .navigation-links-wrapper a.title-link:hover { background: #d3ebe7; }
+html:not(.vp-billing) .navigation-link-container > li { border: 0 !important; }
+html:not(.vp-billing) body:has(.opd-header-wrapper) select, html:not(.vp-billing) body:has(.opd-header-wrapper) textarea,
+html:not(.vp-billing) body:has(.opd-header-wrapper) input[type=text], html:not(.vp-billing) body:has(.opd-header-wrapper) input[type=search] {
+  border: 1px solid #cfe0de !important; border-radius: 8px !important; background-color: #fff !important; padding: 6px 10px; }
+
+/* --- Sign-in role cards in the Home-tile style: coloured icon tile, title, description, round arrow --- */
+.vp-cards .vp-card { --c: #0f766e; --t: #dcf2ee;
+  display: grid !important; grid-template-columns: 52px 1fr 36px; grid-template-areas: "ico title arrow" "ico desc arrow"; align-items: center;
+  column-gap: 14px; row-gap: 2px; padding: 14px 16px !important; min-height: 84px; text-align: left;
+  background: #fff !important; border: 1px solid var(--vt-line, #e2ecec) !important; border-left-width: 1px !important; border-radius: 18px !important;
+  box-shadow: 0 1px 2px rgba(15,42,55,.04), 0 12px 28px -18px rgba(15,118,110,.40) !important; position: relative; overflow: hidden; }
+.vp-cards .vp-card::before { content: ""; position: absolute; top: -46px; right: -46px; width: 110px; height: 110px; border-radius: 50%; background: var(--t); opacity: .55; pointer-events: none; }
+.vp-cards .vp-card:hover { transform: translateY(-2px); background: #fff !important; box-shadow: 0 2px 4px rgba(15,42,55,.05), 0 18px 34px -18px rgba(15,118,110,.5) !important; }
+.vp-cards .vp-card-ico { grid-area: ico; width: 52px; height: 52px; border-radius: 15px; background: var(--t); color: var(--c); display: flex; align-items: center; justify-content: center; position: relative; }
+.vp-cards .vp-card-title { grid-area: title; align-self: end; font-size: 17px !important; font-weight: 700 !important; color: #0f2a37 !important; position: relative; }
+.vp-cards .vp-card-desc { grid-area: desc; align-self: start; font-size: 12.5px !important; color: #5b6b7a !important; position: relative; }
+.vp-cards .vp-card-arrow { grid-area: arrow; width: 36px; height: 36px; border-radius: 50%; background: var(--t); color: var(--c); display: flex; align-items: center; justify-content: center; position: relative; transition: transform .15s ease; }
+.vp-cards .vp-card:hover .vp-card-arrow { transform: translateX(3px); }
+.vp-cards .vp-card[data-role="reception"]     { --c: #0f766e; --t: #dcf2ee; }
+.vp-cards .vp-card[data-role="doctor"]        { --c: #2563eb; --t: #e2ecff; }
+.vp-cards .vp-card[data-role="ward-nurse"]    { --c: #b45309; --t: #fdeccf; }
+.vp-cards .vp-card[data-role="laboratory"]    { --c: #0e7490; --t: #daf2f7; }
+.vp-cards .vp-card[data-role="cashier"]       { --c: #a16207; --t: #fdf3c8; }
+.vp-cards .vp-card[data-role="administrator"] { --c: #334155; --t: #e6ebf1; }
+.vp-cards .vp-card[data-role="billing"]       { --c: #15803d; --t: #dbf4e2; }
+.vp-cards .vp-card-grid { gap: 12px !important; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important; }
+/* the stock sign-in box is pinned to the bottom of the window, leaving a white strip under short content */
+html.vp-page-login .login { bottom: auto !important; height: auto !important; margin-bottom: 40px !important; }
+@media (min-width: 641px) {
+  /* wider box (two cards per row, like the Home tiles), placed under the logo instead of vertically centred */
+  html.vp-page-login .login { width: min(1240px, 94vw) !important; max-width: none !important; left: 50% !important; right: auto !important; transform: translateX(-50%) !important;
+    margin-left: 0 !important; margin-top: 0 !important; top: 104px !important; }
+}
+/* landscape: cards flow across the wide sign-in box (3-4 per row); keep the language selector a normal size */
+@media (min-width: 641px) { html.vp-page-login .vp-cards .vp-card-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important; } }
+html.vp-page-login #locale { width: 130px !important; max-width: 130px !important; }
+html.vp-page-login .login header .locale-wrapper { max-width: none !important; overflow: visible !important; }
+
+/* --- clearer borders everywhere (user feedback 28 Oct): darker line colour, 1.5px on cards and panels --- */
+:root { --vt-line: #bcd3cf; }
+a[class*="AppTile_tile"], .vp-cards .vp-card, html.vp-page-login .login,
+html:not(.vp-billing) .section-grid, html:not(.vp-billing) .dashboard-section, html:not(.vp-billing) .adt .box,
+html:not(.vp-billing) [class*="DashboardSection_sectionWrapper"], html:not(.vp-billing) .dashboard .apps li > a,
+html:not(.vp-billing) li.active-patient { border: 1.5px solid #bcd3cf !important; }
+html:not(.vp-billing) .bed-assignment li.col { border-width: 1.5px !important; border-color: #9fd3b9 !important; }
+html:not(.vp-billing) .bed-assignment li.col.occupied, html:not(.vp-billing) .bed-assignment li.col[class*="occupied"] { border-color: #e9bd73 !important; }
+a[class*="AppTile_tile"]:hover, .vp-cards .vp-card:hover, html:not(.vp-billing) li.active-patient:hover, html:not(.vp-billing) .dashboard .apps li > a:hover { border-color: #7fb8b0 !important; }
+
+/* --- hospital trial servers: notice on the sign-in pages, normal (styled) sign-in form --- */
+.vp-hnotice { margin: 4px 0 16px; padding: 12px 14px; border-radius: 12px; background: #e6f4f1; border: 1.5px solid #bcd3cf; color: #0f2a37; font-size: 14px; line-height: 1.45; }
+.vp-hnotice strong { font-size: 16px; color: #0b5f58; }
+html.vp-hospital.vp-page-login .login { width: min(560px, 94vw) !important; }
+html.vp-hospital form[name=loginForm] input[type=text], html.vp-hospital form[name=loginForm] input[type=password] {
+  border: 1.5px solid #bcd3cf !important; border-radius: 10px !important; height: 44px; padding: 0 12px !important; font-size: 15px; }
+html.vp-hospital form[name=loginForm] button[type=submit] { width: 100%; height: 46px; border-radius: 10px !important; font-size: 16px; font-weight: 600; }
+html.vp-hospital #vipers-root .vp-badge-tag { background: #fdeccf; color: #92400e; }
+
+/* --- evening mode: one switch for every module; photos, logos, bed icons and documents keep true colours --- */
+html.vp-dark { filter: invert(.9) hue-rotate(180deg); background: #fff; }
+/* natural background would invert into odd colours: plain soft background in evening mode */
+html.vp-dark.vp-page-login body, html.vp-dark main[class*="HomePage_homePageBody"] { background: var(--vt-bg) !important; }
+html.vp-dark img, html.vp-dark video, html.vp-dark picture, html.vp-dark canvas, html.vp-dark iframe, html.vp-dark object, html.vp-dark embed,
+html.vp-dark .bed-assignment li.col, html.vp-dark [style*="background-image"] { filter: invert(1) hue-rotate(180deg); }
+#vipers-root .vp-theme-btn { width: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+/* evening mode: keep teal header bars dark teal (flip them back), and let the logo invert so its text turns light */
+html.vp-dark .reg-header, html.vp-dark .cds--header, html.vp-dark .opd-header-wrapper, html.vp-dark .section-title,
+html.vp-dark .tab-item.tab-selected > a, html.vp-dark #vipers-root .vp-ai-btn { filter: invert(1) hue-rotate(180deg); }
+html.vp-dark img.vipers-logo-img, html.vp-dark .clint-logo-wrapper img, html.vp-dark #vp-brand img { filter: none; }
+html.vp-dark .cds--header img, html.vp-dark .opd-header-wrapper img { filter: none; }

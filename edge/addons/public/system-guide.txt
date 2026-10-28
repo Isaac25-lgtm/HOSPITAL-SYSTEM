@@ -1,0 +1,27 @@
+VIPERS HOSPITAL - SYSTEM GUIDE (verified screens and buttons; fictional demo data only)
+
+SIGNING IN AND MOVING AROUND
+- Sign-in page: click the card for a role (Reception, Doctor, Ward Nurse, Laboratory, Cashier, Administrator) - no password. The Billing card opens the billing system.
+- Home shows only the modules (tiles) that role may use. The VIPERS logo or the Home button/icon (top left) always returns to Home.
+- Log out: top right "Hi, <name>" menu > Logout (Lab Entry: user icon > Logout; In-Patient and older screens: user icon top right > Logout; Billing: avatar menu > Logout). To change role, log out and click another card.
+- Every screen has a "?" button (short help for that screen) and Ask Vipers AI. A first-login tour can be replayed from the "?" panel.
+
+THE PATIENT JOURNEY (who does what, in order)
+1. Reception - Registration: search first (name or Patient ID, or phone number). If not found: Create New Patient > first name, last name, gender, date of birth (or age), phone (Contact information) > Save. A Patient ID like ABC200025 is created. Then Start OPD visit (message says "Patient updated successfully"; the visit is created). Reception also books appointments and uploads documents.
+2. Doctor - Clinical tile > Active patient list > click the patient > patient dashboard. New Consultation opens the consultation pad on the right: Allergies (search, then Severity and Reactions), Conditions and Diagnoses (search, then Certainty Confirmed/Provisional), Order Investigations/Procedures (lab tests such as Rapid test for malaria), Medications (search the drug, then Dosage, Dosage Unit, Frequency, Duration, Route; total quantity is calculated), Vaccinations, Observation Forms (Vitals; History and Examination). Each form has Save Form; then click Done to save the whole consultation. The dashboard then shows Observations, Allergies, Diagnoses, Medications, Vitals Flow Sheet, Lab Investigations. Print latest medications prints the prescription.
+3. Laboratory - Lab Entry tile > Active Patient List (or search icon) > patient > Pending Lab Orders > tick the order > Enter Test Results > choose the answer, tick Abnormal if needed, pick Report Date from the calendar > Save and Upload ("Saved successfully"). Upload Report attaches a file. The result then appears on the doctor's dashboard under Lab Investigations.
+4. Cashier - Billing (tile or card) > Enter Billing as Cashier. Patients registered in VIPERS HOSPITAL appear automatically under Customers. Invoices > New Invoice > New Customer (pick the patient) > Items: type to search the price list (prices in UGX), Add New Item for more lines > Save Invoice. Then the ... menu > Record Payment (or Payments > New Payment): Payment Mode (Mobile Money, Cash, Cheque, Credit Card, Bank Transfer) > Save Payment; the receipt opens.
+5. Ward Nurse / Doctor - In-Patient tile (admissions):
+   - Ward List: each ward bar shows total and available beds; the grid button shows the bed layout (green = free, amber = occupied).
+   - Admit: All tab (or To Admit) > search the patient > Patient Movement: Admit Patient > note > Admit > confirm starting the IPD visit > open a ward > click a free bed > Assign.
+   - Admitted tab lists inpatients. Open one to Transfer (Patient Movement: Transfer Patient > Transfer > choose new ward and bed > Assign) or Discharge (Patient Movement: Discharge Patient > Discharge; the bed is freed).
+   - The ward page shows the patient's vitals and diagnoses from the consultation. Change to Care View shows a nursing board.
+   Wards: Female Ward (10 beds), Male Ward (10), Maternity Ward (6), Paediatric Ward (6).
+6. Appointments - Appointment Scheduling tile: Summary (counts per day and service), Appointments List > Add new appointment (search patient, choose Service, Scheduled, date and time > Check and Save), Awaiting Appointments. Check in from the list.
+7. Documents - Patient Documents tile: search patient > upload images or PDF (max 5 MB) per visit.
+8. Administrator - Reports (pick dates, format, Run Now or Queue; My Reports for queued ones): Clinic Visit, OPD/Emergency Visit Count, Missed Appointments, Patients to follow up, Registered Patients, Notifiable Diseases, Diagnosis Count. Admin tile: Audit Log (filter by date, user, patient ID), Order Sets, FHIR Export. Form Builder tile builds and prints clinical forms. Appointment services are managed under Appointment Scheduling > Admin.
+
+GOOD TO KNOW
+- Temperature is in degrees F. Entering only an age stores an estimated date of birth of 1 January.
+- Not in this system: pharmacy stock/dispensing, radiology, analytics dashboards. Billing does not create invoices automatically from orders - the cashier adds the items.
+- First visit to a module can take several seconds while it loads ("Loading VIPERS HOSPITAL...").

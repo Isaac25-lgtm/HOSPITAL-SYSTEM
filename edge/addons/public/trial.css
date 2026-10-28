@@ -1,0 +1,27 @@
+/* VIPERS HOSPITAL trial portal (open an account / log in) - same look as the redesigned system */
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; font: 15px/1.5 "IBM Plex Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f2a37;
+  background: #eef6f3 url(/vipers-assets/nature-bg.svg) center bottom / cover no-repeat fixed; }
+.tp { max-width: 560px; margin: 0 auto; padding: 40px 16px 48px; text-align: center; }
+.tp-logo { width: 210px; height: auto; margin-bottom: 18px; }
+h1 { font-size: 26px; line-height: 1.25; margin: 0 0 10px; }
+.tp-sub { display: inline-block; padding: 6px 14px; border-radius: 12px; background: rgba(255,255,255,.78); backdrop-filter: blur(4px); color: #2f4652; margin: 0 0 10px; }
+.tp-note { margin: 0 0 22px; padding: 10px 14px; border-radius: 12px; background: #fdf3c8; border: 1.5px solid #ecd27a; color: #5c4400; font-size: 14px; }
+.tp-tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; flex-wrap: wrap; }
+.tp-tabs button { border: 1.5px solid #bcd3cf; background: #fff; color: #0b5f58; border-radius: 999px; padding: 9px 16px; font: inherit; font-weight: 600; cursor: pointer; }
+.tp-tabs button[aria-selected="true"] { background: #0f766e; border-color: #0f766e; color: #fff; }
+.tp-card { text-align: left; background: #fff; border: 1.5px solid #bcd3cf; border-radius: 20px; padding: 22px; box-shadow: 0 1px 2px rgba(15,42,55,.04), 0 18px 40px -22px rgba(15,118,110,.45); }
+.tp-card label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 14px; }
+.tp-card input { display: block; width: 100%; margin-top: 6px; height: 44px; padding: 0 12px; border: 1.5px solid #bcd3cf; border-radius: 10px; font: inherit; font-weight: 400; }
+.tp-card input:focus { outline: 2px solid rgba(15,118,110,.35); border-color: #0f766e; }
+.tp-card button[type=submit] { width: 100%; height: 48px; border: 0; border-radius: 12px; background: #0f766e; color: #fff; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+.tp-card button[type=submit]:hover { background: #0b5f58; }
+.tp-card button[disabled] { opacity: .6; cursor: wait; }
+.tp-msg { min-height: 22px; margin: 12px 0 0; font-size: 14px; }
+.tp-msg.err { color: #b42318; }
+.tp-wait { text-align: center; }
+.tp-spin { width: 38px; height: 38px; margin: 6px auto 12px; border: 3px solid #dcf2ee; border-top-color: #0f766e; border-radius: 50%; animation: tp-spin .9s linear infinite; }
+@keyframes tp-spin { to { transform: rotate(360deg); } }
+.tp-steps { text-align: left; margin: 12px auto 0; max-width: 360px; color: #3d5361; font-size: 14px; }
+.tp-foot { display: inline-block; margin-top: 28px; padding: 6px 14px; border-radius: 999px; background: rgba(255,255,255,.82); color: #3d5361; font-size: 13px; }
+.tp-foot a { color: #0f766e; }

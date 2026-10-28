@@ -1,0 +1,16 @@
+[guard] running on vipers-hospital-vm - Ubuntu 24.04.5 LTS - 2026-10-25 08:19:27 EAT
+PASS | Only Caddy publishes ports to the internet | other services bound to 127.0.0.1 or internal only
+PASS | Secrets directory/files root-only | 600 root;700 root;
+PASS | No API key or owner/database password in any container or VIPERS log
+PASS | No API key in deployed code/assets
+PASS | HTTPS response has Strict-Transport-Security
+PASS | HTTPS response has X-Robots-Tag
+PASS | HTTPS response has Referrer-Policy
+PASS | Server header hidden
+PASS | Gate protects Bahmni API
+PASS | Default credential rejected: superman
+PASS | Default credential rejected: admin
+PASS | Default credential rejected: registration
+PASS | Crater default admin (superman@bahmni.org/Crater123) rejected
+INFO | patients in system (all fictional demo/test records): 0
+PASS | Firewall: SSH only via Google IAP range | rule allow-ssh-from-iap 35.235.240.0/20; default SSH/RDP rules deleted

@@ -1,0 +1,66 @@
+{
+  "homePage": {
+    "header_text": "<b>WELCOME TO<br />VIPERS HOSPITAL</b>",
+    "logo": "/bahmni_config/openmrs/apps/home/vipers-logo.png",
+    "title_text": " "
+  },
+  "loginPage": {
+    "logo": "/bahmni_config/openmrs/apps/home/vipers-logo.png",
+    "showHeaderText": true,
+    "showTitleText": false
+  },
+  "helpLink": {
+    "url": "/vipers-assets/help.html"
+  },
+  "landingPage": [
+    {
+      "enabled": true,
+      "name": "clinicalService",
+      "title": "VIPERS HOSPITAL EMR",
+      "logo": "/bahmni/images/app.png",
+      "link": "/bahmni-v2/home"
+    },
+    {
+      "enabled": false,
+      "name": "openelis",
+      "title": "Laboratory",
+      "logo": "/bahmni/images/lab.png",
+      "link": "/openelis"
+    },
+    {
+      "enabled": false,
+      "name": "odoo",
+      "title": "Stock Inventory & Billing",
+      "logo": "/bahmni/images/bills.png",
+      "linkPrefix": "erp"
+    },
+    {
+      "enabled": true,
+      "name": "crater",
+      "title": "Billing & Payments",
+      "logo": "/bahmni/images/bills.png",
+      "link": "/vipers-gate/to-billing"
+    },
+    {
+      "enabled": false,
+      "name": "connect",
+      "title": "Connect",
+      "logo": "/bahmni/images/connect.png",
+      "link": "/bahmni-connect"
+    },
+    {
+      "enabled": false,
+      "name": "dcm",
+      "title": "Radiology",
+      "logo": "/bahmni/images/pac.png",
+      "link": "/dcm4chee-web3"
+    },
+    {
+      "enabled": false,
+      "name": "metabase",
+      "title": "Analytics",
+      "logo": "/bahmni/images/analytics.png",
+      "link": "/metabase"
+    }
+  ]
+}

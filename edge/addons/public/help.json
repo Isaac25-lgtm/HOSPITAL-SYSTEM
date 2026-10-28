@@ -1,0 +1,576 @@
+{
+  "pages": {
+    "login": {
+      "title": "Signing in",
+      "tip": "Click the card for your role to enter. No password is needed.",
+      "steps": [
+        "Click the card for the role you want to explore: Reception, Doctor, Laboratory, Cashier or Administrator.",
+        "The system signs you in and chooses the location VIPERS HOSPITAL for you.",
+        "You arrive on the Home page, which shows only the modules your role can use.",
+        "To switch role, log out and click a different card. The Billing card opens the billing system."
+      ],
+      "examples": [
+        "Which account should I use?",
+        "How do I log out?",
+        "What is on the home page?"
+      ]
+    },
+    "home": {
+      "title": "Home",
+      "tip": "Click a module tile to start. You only see the modules your role is allowed to use.",
+      "steps": [
+        "Choose a tile: Registration, Clinical, Lab Entry, Appointment Scheduling, Patient Documents, Billing, Reports or Admin (depending on your role).",
+        "Use Home in the breadcrumb at the top, or the VIPERS HOSPITAL logo, to come back here.",
+        "To log out, click 'Hi, <your name>' at the top right and choose Logout."
+      ],
+      "examples": [
+        "How do I register a patient?",
+        "How do I record a consultation?",
+        "How do I create an invoice?"
+      ]
+    },
+    "patient-search": {
+      "title": "Find a patient (Registration)",
+      "tip": "Search for an existing patient before creating a new record.",
+      "steps": [
+        "Type a name or Patient ID (for example ABC200001) and click Search, or search by phone number on the right.",
+        "In the results, click the Patient ID to open that patient's registration record.",
+        "If the patient is not found, click Create New Patient (top right)."
+      ],
+      "examples": [
+        "How do I search by phone number?",
+        "How do I register a new patient?",
+        "How do I start a visit?"
+      ]
+    },
+    "registration": {
+      "title": "Register a new patient",
+      "tip": "First name, last name, gender, age or date of birth, and phone number are required.",
+      "steps": [
+        "Enter First Name and Last Name (letters only) and choose Gender.",
+        "Enter the exact date of birth if it is known. If you enter only the age in years, the system records an estimated date of birth of 1 January of that year (marked as estimated).",
+        "Open Address information to add village/city, and Contact information to add the phone number (required).",
+        "Click Save. A Patient ID such as ABC200005 is created.",
+        "Click Start OPD visit to check the patient in (the confirmation says \"Patient updated successfully\"; the visit is created and appears as Active Visit), or Print Registration Card."
+      ],
+      "examples": [
+        "Which fields are required?",
+        "How do I start a visit after registering?",
+        "How do I print the registration card?"
+      ]
+    },
+    "registration-edit": {
+      "title": "Patient registration record",
+      "tip": "Edit any field and click Save to update the patient's details.",
+      "steps": [
+        "Change the details you need (name, address, phone) and click Save.",
+        "Click Start OPD visit to check the patient in for today.",
+        "When a visit is active, click Patient Dashboard to open the clinical record.",
+        "Click Print Registration Card to print the patient's card."
+      ],
+      "examples": [
+        "How do I start a visit?",
+        "How do I update a phone number?",
+        "How do I print the registration card?"
+      ]
+    },
+    "clinical-search": {
+      "title": "Clinical: choose a patient",
+      "tip": "The Active tab lists patients with an open visit today.",
+      "steps": [
+        "Use the Active tab for patients who are checked in today, or All to search every patient.",
+        "Type a name or ID in the search box and press Enter.",
+        "Click the patient to open their clinical dashboard."
+      ],
+      "examples": [
+        "Why is my patient not in the Active list?",
+        "How do I open a patient's record?",
+        "How do I record a consultation?"
+      ]
+    },
+    "patient-dashboard": {
+      "title": "Patient clinical dashboard",
+      "tip": "Click New Consultation (or Continue Consultation) to record vitals, diagnoses, orders and prescriptions.",
+      "steps": [
+        "The left menu jumps to sections: Allergies, Conditions and Diagnoses, Medications, Vitals Flow Sheet, Lab Investigations, Forms, Appointments, Patient Documents.",
+        "Click New Consultation to open the consultation pad on the right.",
+        "Lab results entered by the laboratory appear under Lab Investigations.",
+        "Use Print latest medications to print the current prescription."
+      ],
+      "examples": [
+        "How do I record a consultation?",
+        "Where do I see lab results?",
+        "How do I record vital signs?"
+      ]
+    },
+    "consultation": {
+      "title": "Consultation pad",
+      "tip": "Add everything for this visit, then click Done at the bottom to save it all at once.",
+      "steps": [
+        "Allergies: search and add any allergy.",
+        "Diagnoses: search (e.g. Malaria), pick the diagnosis and set Certainty (Confirmed or Provisional).",
+        "Order Investigations/Procedures: search a test (e.g. Rapid test for malaria); tick Urgent if needed.",
+        "Medications: search a drug, then enter Dosage, Dosage Unit, Frequency, Duration and Route.",
+        "Vitals or History and Examination: click the pinned form, fill it and click Save Form.",
+        "Click Done to save the consultation (Cancel discards it)."
+      ],
+      "examples": [
+        "How do I add a diagnosis?",
+        "How do I prescribe a medicine?",
+        "How do I order a lab test?"
+      ]
+    },
+    "vitals": {
+      "title": "Vitals form",
+      "tip": "Ranges are shown next to each field; values outside the range can be flagged Abnormal.",
+      "steps": [
+        "Enter Pulse, oxygen saturation, Respiratory rate and Temperature (this demo's form uses Fahrenheit).",
+        "Open Blood Pressure and enter systolic and diastolic values; choose the body position if needed.",
+        "Click Save Form, then click Done on the consultation to save the visit."
+      ],
+      "examples": [
+        "Why do I need to click Done after Save Form?",
+        "Where do I see previous vitals?",
+        "How do I add a note to a value?"
+      ]
+    },
+    "lab-queue": {
+      "title": "Lab Entry: work queue",
+      "tip": "The Active Patient List shows patients with an open visit. Click a patient to see their pending tests.",
+      "steps": [
+        "Click a patient in the Active Patient List, or use Search Patient at the top.",
+        "On the patient page, Pending Lab Orders lists the tests the doctor ordered."
+      ],
+      "examples": [
+        "Where do I enter lab results?",
+        "Why is my patient not listed?",
+        "How do I upload a lab report?"
+      ]
+    },
+    "lab-results": {
+      "title": "Enter lab results",
+      "tip": "Tick the test in Pending Lab Orders, then click Enter Test Results.",
+      "steps": [
+        "Tick the checkbox of the test in Pending Lab Orders.",
+        "Click Enter Test Results.",
+        "Choose or type the result (e.g. Positive for Plasmodium falciparum) and tick Abnormal if appropriate.",
+        "Pick the Report Date from the calendar and check Requested by.",
+        "Click Save and Upload. The result now appears for the doctor under Lab Investigations.",
+        "To attach a scanned report instead, use Upload Report.",
+        "After Save and Upload the message \"Saved successfully\" appears and the order leaves Pending Lab Orders. The result is then visible to the doctor under Lab Investigations on the patient dashboard.",
+        "Tick Abnormal yourself for positive or out-of-range results; it is not set automatically."
+      ],
+      "examples": [
+        "How do I enter a result?",
+        "How do I upload a scanned report?",
+        "Where does the doctor see the result?"
+      ]
+    },
+    "appointments": {
+      "title": "Appointments",
+      "tip": "Use Appointments List > Add new appointment to book a patient.",
+      "steps": [
+        "Open the Appointments List tab and click Add new appointment.",
+        "Search the patient, choose the Service (e.g. General Medicine OPD Consultation) and optionally a provider.",
+        "Choose Scheduled (or Waitlist), the date and the start time.",
+        "Click Check and Save.",
+        "On the day, select the appointment in the list and click Check-in, Complete, Missed or Cancel."
+      ],
+      "examples": [
+        "How do I book an appointment?",
+        "How do I check a patient in?",
+        "How do I see this week's appointments?"
+      ]
+    },
+    "documents": {
+      "title": "Patient documents",
+      "tip": "Documents are filed under a visit. Images, videos and PDF up to 5 MB are supported.",
+      "steps": [
+        "Open the patient (from the Patient Documents tile, search the patient).",
+        "Under the visit, click Upload and choose the file.",
+        "Check the document type (e.g. Patient File) and click Save."
+      ],
+      "examples": [
+        "How do I upload a document?",
+        "Which file types are allowed?",
+        "Where can I see uploaded documents?"
+      ]
+    },
+    "admin": {
+      "title": "Administration",
+      "tip": "Admin includes Audit Log, Order Sets and FHIR Export; the Form Builder tile builds and prints clinical forms.",
+      "steps": [
+        "Admin tile: view the Audit Log, manage Order Sets, or run a FHIR Export.",
+        "Form Builder tile: build or print clinical forms (Form Builder, Print Form).",
+        "Appointment Scheduling > Admin: add or edit appointment services and their availability.",
+        "Reports tile: run standard reports (Run Now) or queue them."
+      ],
+      "examples": [
+        "How do I add an appointment service?",
+        "Where is the audit log?",
+        "How do I run a report?"
+      ]
+    },
+    "reports": {
+      "title": "Reports",
+      "tip": "Choose a report, set the date range and click Run Now.",
+      "steps": [
+        "Open the Reports tile.",
+        "Pick the start and end dates for the report you want.",
+        "Click Run Now to view it, or Queue to generate it in the background (see My Reports)."
+      ],
+      "examples": [
+        "How do I run a report?",
+        "Where are queued reports?"
+      ]
+    },
+    "billing-login": {
+      "title": "Billing sign-in",
+      "tip": "Billing is a separate application: click 'Enter Billing as Cashier'. No password is needed.",
+      "steps": [
+        "Click the card 'Enter Billing as Cashier'.",
+        "You arrive on the billing Dashboard."
+      ],
+      "examples": [
+        "How do I create an invoice?",
+        "Why is billing a separate login?"
+      ]
+    },
+    "billing": {
+      "title": "Billing",
+      "tip": "Patients registered in VIPERS HOSPITAL appear automatically as billing Customers.",
+      "steps": [
+        "Customers: patients sync automatically from registration, with their Patient ID.",
+        "Items: the hospital price list (consultations, tests, medicines) in UGX.",
+        "Invoices: create and view invoices. Payments: record payments and view receipts."
+      ],
+      "examples": [
+        "How do I create an invoice?",
+        "How do I record a payment?",
+        "How do I print a receipt?"
+      ]
+    },
+    "billing-invoices": {
+      "title": "Invoices and payments",
+      "tip": "Pick the patient as the customer, add items, then Save Invoice.",
+      "steps": [
+        "Invoices > New Invoice. Click 'New Customer' and search the patient by name or Patient ID.",
+        "Under Items, choose a service or medicine; use Add New Item for more lines. Prices are in UGX.",
+        "Click Save Invoice.",
+        "To take payment, open Payments > New Payment (or Record Payment from the invoice), choose the invoice, amount and payment mode, then Save Payment.",
+        "The payment page shows the receipt; use Send Payment Receipt or the menu to download it."
+      ],
+      "examples": [
+        "How do I record a payment?",
+        "How do I print a receipt?",
+        "How do I add a new price item?"
+      ]
+    },
+    "billing-customers": {
+      "title": "Billing customers",
+      "tip": "Customers are created automatically when a patient is registered; search by name or Patient ID.",
+      "steps": [
+        "Search the customer list by name.",
+        "Open a customer to see their invoices and payments."
+      ],
+      "examples": [
+        "Why is a patient missing from customers?",
+        "How do I create an invoice?"
+      ]
+    },
+    "adt": {
+      "title": "In-Patient (wards)",
+      "tip": "Ward List shows bed occupancy; To Admit, Admitted and To Discharge list patients for each step.",
+      "steps": [
+        "To admit: open All (or To Admit), search the patient by name or ID and open them.",
+        "Choose Patient Movement > Admit Patient, add a short note and click Admit (confirm starting the IPD visit).",
+        "Expand a ward, click a free (green) bed and click Assign.",
+        "Admitted lists everyone on the wards. Open a patient to Transfer them to another ward or bed, or to Discharge them.",
+        "Change to Care View shows the wards as a nursing board."
+      ],
+      "examples": [
+        "How do I admit a patient?",
+        "How do I discharge a patient?",
+        "How do I move a patient to another ward?"
+      ]
+    }
+  },
+  "faq": [
+    {
+      "q": "How do I register a patient?",
+      "k": "register new patient create registration",
+      "pages": [
+        "home",
+        "patient-search",
+        "registration"
+      ],
+      "a": "Registration tile > Create New Patient:",
+      "steps": [
+        "Enter first and last name, gender and age (or date of birth).",
+        "Open Contact information and enter the phone number (required).",
+        "Click Save, then Start OPD visit."
+      ]
+    },
+    {
+      "q": "How do I search for a patient?",
+      "k": "search find patient lookup id phone",
+      "pages": [
+        "patient-search",
+        "clinical-search",
+        "home"
+      ],
+      "a": "In Registration (or Clinical), type the name or Patient ID and click Search. Click the Patient ID in the results to open the record."
+    },
+    {
+      "q": "How do I start a visit?",
+      "k": "start visit check in opd",
+      "pages": [
+        "registration-edit",
+        "patient-search",
+        "registration"
+      ],
+      "a": "Open the patient's registration record and click Start OPD visit. When the visit is active the button changes to Patient Dashboard."
+    },
+    {
+      "q": "How do I record a consultation?",
+      "k": "record consultation consult doctor notes encounter",
+      "pages": [
+        "patient-dashboard",
+        "home",
+        "clinical-search",
+        "consultation"
+      ],
+      "a": "Clinical tile > open the patient:",
+      "steps": [
+        "Click New Consultation.",
+        "Add diagnoses, investigations, medications and the Vitals form as needed.",
+        "Click Done to save."
+      ]
+    },
+    {
+      "q": "How do I add a diagnosis?",
+      "k": "add diagnosis diagnose condition malaria certainty",
+      "pages": [
+        "consultation",
+        "patient-dashboard"
+      ],
+      "a": "In the consultation pad, type in 'Search to add new Diagnosis', choose the diagnosis, set Certainty (Confirmed or Provisional), then click Done."
+    },
+    {
+      "q": "How do I prescribe a medicine?",
+      "k": "prescribe prescription medication medicine drug dose",
+      "pages": [
+        "consultation",
+        "patient-dashboard"
+      ],
+      "a": "In the consultation pad under Medications:",
+      "steps": [
+        "Search the drug and select it.",
+        "Enter Dosage, Dosage Unit, Frequency, Duration and check the Route.",
+        "Click Done to save the prescription."
+      ]
+    },
+    {
+      "q": "How do I order a lab test?",
+      "k": "order lab test investigation laboratory request",
+      "pages": [
+        "consultation",
+        "patient-dashboard"
+      ],
+      "a": "In the consultation pad, use 'Search to add Investigation/Procedure', choose the test (e.g. Rapid test for malaria), tick Urgent if needed, then click Done. The order goes to Lab Entry."
+    },
+    {
+      "q": "How do I record vital signs?",
+      "k": "vitals vital signs blood pressure temperature pulse",
+      "pages": [
+        "consultation",
+        "patient-dashboard",
+        "vitals"
+      ],
+      "a": "In the consultation pad click the pinned Vitals form, enter the values, click Save Form, then click Done."
+    },
+    {
+      "q": "Where do I enter lab results?",
+      "k": "enter lab result results laboratory",
+      "pages": [
+        "lab-queue",
+        "lab-results",
+        "home"
+      ],
+      "a": "Lab Entry tile > click the patient:",
+      "steps": [
+        "Tick the test under Pending Lab Orders.",
+        "Click Enter Test Results and choose the result.",
+        "Pick the Report Date and click Save and Upload."
+      ]
+    },
+    {
+      "q": "Where does the doctor see lab results?",
+      "k": "see view lab results doctor dashboard",
+      "pages": [
+        "patient-dashboard",
+        "lab-results"
+      ],
+      "a": "On the patient's clinical dashboard, open Lab Investigations in the left menu."
+    },
+    {
+      "q": "How do I upload a scanned lab report?",
+      "k": "upload scanned lab report pdf file",
+      "pages": [
+        "lab-results",
+        "lab-queue"
+      ],
+      "a": "In Lab Entry, open the patient, tick the test and click Upload Report, then attach the file and save."
+    },
+    {
+      "q": "How do I book an appointment?",
+      "k": "book appointment schedule new appointment",
+      "pages": [
+        "appointments",
+        "home"
+      ],
+      "a": "Appointment Scheduling > Appointments List > Add new appointment:",
+      "steps": [
+        "Search the patient and choose the Service.",
+        "Choose Scheduled, the date and start time.",
+        "Click Check and Save."
+      ]
+    },
+    {
+      "q": "How do I check a patient in for an appointment?",
+      "k": "check in appointment arrived",
+      "pages": [
+        "appointments"
+      ],
+      "a": "In Appointments List, select the appointment and click Check-in."
+    },
+    {
+      "q": "How do I upload a document?",
+      "k": "upload document file scan patient documents",
+      "pages": [
+        "documents",
+        "home"
+      ],
+      "a": "Patient Documents tile > open the patient > Upload under the visit > choose the file > Save. Images, videos and PDF up to 5 MB."
+    },
+    {
+      "q": "How do I create an invoice?",
+      "k": "create make raise prepare invoice bill billing charge patient cashier",
+      "pages": [
+        "billing",
+        "billing-invoices",
+        "home"
+      ],
+      "a": "Open the Billing tile (Cashier role), or the Billing card on the sign-in page and click Enter Billing as Cashier. Then:",
+      "steps": [
+        "Invoices > New Invoice.",
+        "Click New Customer and pick the patient (patients registered in VIPERS HOSPITAL appear automatically).",
+        "Click the Items box and type to search the price list, e.g. consult or malaria; prices are in UGX.",
+        "Use Add New Item for more lines; the total updates automatically.",
+        "Click Save Invoice. To take payment, use the ... menu > Record Payment."
+      ]
+    },
+    {
+      "q": "How do I record a payment?",
+      "k": "record take receive payment pay paid cash mobile money receipt",
+      "pages": [
+        "billing",
+        "billing-invoices"
+      ],
+      "a": "In Billing, open the invoice and use the ... menu > Record Payment (or Payments > New Payment). Choose the payment mode (Cash, Mobile Money, Bank Transfer...), check the amount and click Save Payment. The receipt opens straight away."
+    },
+    {
+      "q": "How do I print a receipt?",
+      "k": "print receipt download pdf payment",
+      "pages": [
+        "billing",
+        "billing-invoices"
+      ],
+      "a": "Open the payment in Billing > Payments. The receipt is shown on the right; use the menu (...) to download or Send Payment Receipt."
+    },
+    {
+      "q": "How do I add an appointment service?",
+      "k": "add appointment service admin speciality",
+      "pages": [
+        "admin",
+        "appointments"
+      ],
+      "a": "Appointment Scheduling > Admin > Add New Service. Enter the name, duration and availability, then save. (Demo administrator role.)"
+    },
+    {
+      "q": "How do I add a staff user?",
+      "k": "add staff user account create user",
+      "pages": [
+        "admin",
+        "home"
+      ],
+      "a": "In this demonstration, staff accounts are managed by the system owner, not from the screens available to demo users. In a hospital installation, the administrator creates users and assigns roles."
+    },
+    {
+      "q": "Which account should I use?",
+      "k": "which account login username role",
+      "pages": [
+        "login",
+        "home"
+      ],
+      "a": "No password is needed. On the sign-in page, click the card for the role you want to explore: Reception, Doctor, Laboratory, Cashier or Administrator. To switch role, log out and click another card."
+    },
+    {
+      "q": "How do I log out?",
+      "k": "log out logout sign out",
+      "pages": [
+        "home",
+        "login"
+      ],
+      "a": "Click 'Hi, <your name>' at the top right and choose Logout. In Lab Entry use the user icon > Logout; in Billing use the avatar menu."
+    },
+    {
+      "q": "How do I run a report?",
+      "k": "run report reports",
+      "pages": [
+        "reports",
+        "admin"
+      ],
+      "a": "Reports tile > pick the dates for a report > Run Now (or Queue, then find it under My Reports)."
+    },
+    {
+      "q": "How do I print the registration card?",
+      "k": "print registration card",
+      "pages": [
+        "registration-edit",
+        "registration"
+      ],
+      "a": "Open the patient's registration record and click Print Registration Card."
+    },
+    {
+      "q": "How do I admit a patient?",
+      "k": "admit admission inpatient ward bed ipd",
+      "pages": [
+        "adt",
+        "home"
+      ],
+      "a": "Open the In-Patient tile (Ward Nurse, Doctor or Administrator):",
+      "steps": [
+        "To admit: open All (or To Admit), search the patient by name or ID and open them.",
+        "Choose Patient Movement > Admit Patient, add a short note and click Admit (confirm starting the IPD visit).",
+        "Expand a ward, click a free (green) bed and click Assign."
+      ]
+    },
+    {
+      "q": "How do I discharge a patient?",
+      "k": "discharge inpatient ward bed leave",
+      "pages": [
+        "adt"
+      ],
+      "a": "In-Patient > Admitted: open the patient, choose Patient Movement > Discharge Patient, add a note and click Discharge. The bed becomes free again."
+    },
+    {
+      "q": "How do I move a patient to another ward?",
+      "k": "transfer move ward bed inpatient",
+      "pages": [
+        "adt"
+      ],
+      "a": "In-Patient > Admitted: open the patient, choose Patient Movement > Transfer Patient, click Transfer, then pick the new ward and a free bed and click Assign."
+    }
+  ]
+}
