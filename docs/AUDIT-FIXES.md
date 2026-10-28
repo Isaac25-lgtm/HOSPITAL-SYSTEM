@@ -92,3 +92,23 @@ taken (`backup.sh baseline`) before `reset-demo.sh` can be used.
 | M09 reproducible builds | Caddy pinned to 2.11.7 and the replace-response plugin to a fixed commit; the add-on image pinned by digest; In-Patient configuration taken from the kit, never from upstream `master`. |
 | F13 deletion monitoring | Sweep logs an ALERT when a trial is more than an hour past expiry and still exists. Independent deletion without the controller needs the IAM change. |
 | F06/H08 off-host backups | Optional off-site copy: set `BACKUP_BUCKET=gs://...` in `/opt/vipers/secrets/backup.env` (needs a bucket and storage permission, i.e. the owner's approval). |
+
+### End-to-end verification on image v3 (29 Oct 2026, 00:00-00:40)
+
+`vipers-hospital-golden-v3` (label `vipers-boot-sealed=v1`; exact seal checks, fail-on-error edge, pinned Caddy/Node
+images prebuilt). Seal reboot test: 126 TCP + 42 UDP external probes, 0 answers; 73 TCP / 12 UDP dropped after Docker started.
+
+Watching live first-boot logs found two more defects, both fixed before the final run:
+- **The billing-sync account was looked up by username "admin", but its username is empty (system ID "admin").** With the
+  strict first boot every trial failed closed ("sync user missing"); the earlier lenient version had silently skipped the
+  rotation, which would have broken patient-to-billing sync on those trials. Now found by system ID, like `04-harden.sh`.
+- **`2> >(grep -v deprecat)` under `set -E`:** the ERR trap fired inside the helper when grep had nothing to print, failing a
+  successful billing step. Replaced by a stderr file (also in `production-mode.sh`); the copied PHP file is removed as root.
+
+Final run (`vh-qa-test-hospital-b2b4`): setup completed and committed; portal "ready" only after scrubbing; hospital login
+works; demo.doctor/demo.nurse/superman/admin with public or default passwords refused; billing hospital login works and the
+demo cashier is refused; password and delete token removed from instance metadata, delete verifier kept; seal hooks 0 after
+setup (IPv4/IPv6); billing sync 0 authentication errors; trial AI allowance 50 000/day; In-Patient IPD off.
+Reboot of the configured trial: seal re-applied at boot (3 hooks), "already configured" path lifted it (0 hooks), site
+reachable from outside (200). Delete account in a browser 8/8; the server disappeared from the cloud; the portal answers
+only `{"status":"deleted"}`; the registry record keeps no hospital, user, e-mail, IP or verifier; no names in the portal log.
