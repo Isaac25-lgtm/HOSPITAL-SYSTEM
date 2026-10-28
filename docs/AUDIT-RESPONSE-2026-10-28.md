@@ -8,17 +8,17 @@ below make the fictional-data demo and the hospital trial servers safer and more
 Verification added with this change:
 
 - `tests/unit-ai.js`: runs the real AI proxy against a fake provider that records every outbound request (17 checks).
-- `tests/unit-trial.js`: runs the real provisioner against a fake metadata server and Compute API (15 checks).
+- `tests/unit-trial.js`: runs the real provisioner against a fake metadata server and Compute API (14 checks in the original b7feaa2 suite).
 - `tests/wf-trial-delete.js`: a real hospital trial server in a browser (sign-in, TRIAL label, delete dialog, deletion).
 - `scripts/run-all.sh` now exits non-zero when any suite fails or produces no results.
 
 | # | Sev. | Status | What changed |
 |---|---|---|---|
 | 01 | Critical | Open (production) | Public demo access is intentional for the fictional-data demo. A production profile that refuses demo accounts, cards and demo automation is still to be built. |
-| 02 | High | **Fixed** | `tenant-firstboot.sh` blocks ports 80/443 (host firewall, `INPUT` and `DOCKER-USER`) before anything starts, checks every HTTP status, verifies that **no** public demo password and no default password works and that the hospital login works, and only then opens the ports. Any failure leaves the ports closed, writes `hospital-failed` and the portal deletes the server. Setup is resumable (existing user: password reset; provider created only if missing). |
+| 02 | High | **Fixed** | `tenant-firstboot.sh` originally blocked only TCP 80/443 after Docker startup; see AUDIT-FIXES.md for the required pre-Docker sealed-image fix, checks every HTTP status, verifies that **no** public demo password and no default password works and that the hospital login works, and only then opens the ports. Any failure leaves the ports closed, writes `hospital-failed` and the portal deletes the server. Setup is resumable (existing user: password reset; provider created only if missing). |
 | 03 | High | **Fixed** | `crater-hospital-user.php` deletes all copied Sanctum tokens and sessions and clears remember-me tokens, then verifies; the billing sync service is recreated so it signs in afresh. |
 | 04 | High | Partly | `TRIAL_SA` setting added so trial servers can run as a separate low-privilege service account (only Secret Manager access to the AI key). Creating that account is an IAM change awaiting the owner's approval; until then trials still use the main VM's account. |
-| 05 | High | **Fixed** | Server validates every history entry (shape, length, privacy and scope checks); refused questions never enter browser history; the page title is no longer sent; screen labels pass only if every word appears in our own help text (patient names cannot); page and role come from server-owned lists; screen labels go in the user message, not the system instructions. Proven by `unit-ai.js`. |
+| 05 | High | **Fixed** | Server validates every history entry (shape, length, privacy and scope checks); refused questions never enter browser history; the page title is no longer sent; screen labels pass only if every word appears in our own help text (this reduces exposure but cannot prove absence of names); page and role come from server-owned lists; screen labels go in the user message, not the system instructions. Proven by `unit-ai.js`. |
 | 06 | High | **Fixed** | Non-object JSON bodies get 400; every handler is awaited inside the error boundary; an `unhandledRejection` handler logs instead of exiting; gate codes and cookies are compared as bytes. Proven by `unit-ai.js` (null, array, string, number, broken JSON, Unicode gate code). |
 | 07 | High | **Fixed** | Username and slot are reserved synchronously before any await. Proven: four simultaneous sign-ups with one username create one server; never more than three servers. |
 | 08 | High | **Fixed** | Registry written via temp file + fsync + rename; a damaged file is kept aside; a failed save refuses the sign-up; every sweep reconciles with labelled cloud servers and adopts unknown ones (`vipers-trial-id` / `vipers-expires` labels). Proven by `unit-trial.js`. |
@@ -83,5 +83,7 @@ See `docs/TRIAL-PORTAL.md`.
   dashboard configuration the browser receives (vitals are still checked on screen).
 
 Final verification (28 Oct 2026, evening): acceptance 114/114, QA fixes 14/14, sign-in cards 18/18, phone 6/6, loading 3/3,
-`unit-ai.js` 17/17, `unit-trial.js` 15/15, and a real trial server end to end (fail-closed setup, demo/default passwords
+`unit-ai.js` 17/17, `unit-trial.js` 14/14 (corrected historical count), and a real trial server end to end (fail-closed setup, demo/default passwords
 refused, billing demo cashier refused, secrets removed from metadata, Delete account 8/8, server removed from the cloud).
+
+Later source fixes and local verification are tracked in [AUDIT-FIXES.md](AUDIT-FIXES.md); earlier live verification claims above apply to the historical deployment, not these changes.

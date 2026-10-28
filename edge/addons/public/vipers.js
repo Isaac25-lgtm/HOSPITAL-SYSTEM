@@ -100,6 +100,16 @@
   }
   // the exact stock phrases in TEXT_FIXES are interface text, never patient data: they are fixed wherever they appear
   function stockPhrase(n) { return TEXT_FIXES.some(function (f) { return f[0].test(n.nodeValue); }); }
+  // Bahmni's own message alone in a table cell (e.g. the appointments sentence) is interface text; clinical
+  // free text never consists solely of one of these stock phrases, so it stays untouched everywhere else.
+  function wholeStockCell(n) {
+    var e = n.parentNode, cell = e.closest && e.closest('td');
+    if (!cell || e.closest('textarea, [contenteditable], [class*="patient"], [class*="Patient"], [class*="diagnos"], [class*="Diagnos"], [class*="observation"], [class*="Observation"], [class*="note"], [class*="Note"]')) return false;
+    // only Bahmni's appointments sentence is known to sit alone in a table cell; short labels such as "InPatient"
+    // could be data (a visit type) and stay protected
+    var t = cell.textContent.trim(), m = t.match(/This week, no appointments are available for any of the Providers\.?/);
+    return !!m && m[0].trim() === t;
+  }
   function brandTitle() {
     var t = document.title || '';
     var nt = t.replace(BRAND_RE, BRAND).replace(/\bCrater\b/g, BRAND + ' Billing').replace(/^OpenMRS\b/, BRAND);
@@ -111,7 +121,7 @@
       acceptNode: function (n) {
         if (!n.nodeValue || !FIX_TEST.test(n.nodeValue)) return NodeFilter.FILTER_REJECT;
         var p = n.parentNode && n.parentNode.nodeName;
-        return /^(SCRIPT|STYLE|TEXTAREA|INPUT|CODE|PRE)$/.test(p) || (n.parentNode.closest && n.parentNode.closest('#vipers-root,[contenteditable]')) || !(brandable(n) || stockPhrase(n))
+        return /^(SCRIPT|STYLE|TEXTAREA|INPUT|CODE|PRE)$/.test(p) || (n.parentNode.closest && n.parentNode.closest('#vipers-root,[contenteditable]')) || (n.parentNode.closest && n.parentNode.closest(CLINICAL_SEL) && !wholeStockCell(n)) || !(brandable(n) || stockPhrase(n))
           ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
       }
     });
@@ -638,6 +648,50 @@
     ov.appendChild(box); root.appendChild(ov); input.focus();
   }
 
+  // ---------------- spinner watchdog ----------------
+  // No section may trap a user behind an endless loading wheel: if a loading spinner stays visible for 25 s, a banner
+  // explains it and offers Try again / Go to Home (and mentions server errors seen while loading). It disappears on
+  // its own when the screen finishes loading.
+  var SPIN_SEL = '#overlay, .loader, .spinner, .cds--loading, .bx--loading, .cds--loading-overlay, .bx--loading-overlay, .animate-spin';
+  var SPIN_LIMIT = 25000, spinSince = 0, spinBanner = null, spinDismissed = false, failedLoads = 0, forbiddenLoads = 0;
+  try {
+    new PerformanceObserver(function (list) {
+      list.getEntries().forEach(function (e) { if (e.responseStatus >= 500) failedLoads++; if (e.responseStatus === 401 || e.responseStatus === 403) forbiddenLoads++; });
+    }).observe({ type: 'resource', buffered: true });
+  } catch (e) { /* older browsers: no server-error hint */ }
+  function spinnerVisible() {
+    var els = document.querySelectorAll(SPIN_SEL);
+    for (var i = 0; i < els.length; i++) {
+      var e = els[i];
+      if (root && root.contains(e)) continue;
+      var r = e.getBoundingClientRect();
+      if (r.width < 24 || r.height < 24 || r.bottom < 0 || r.top > window.innerHeight) continue;   // tiny inline icons do not count
+      var cs = getComputedStyle(e);
+      if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0) continue;
+      return true;
+    }
+    return false;
+  }
+  function spinWatch() {
+    if (!document.body || !root) return;
+    if (!spinnerVisible()) { spinSince = 0; spinDismissed = false; if (spinBanner) { spinBanner.remove(); spinBanner = null; } return; }
+    if (!spinSince) spinSince = Date.now();
+    // the server refused access (some Bahmni screens then spin for ever): say so after 5 s instead of 25 s
+    if (spinBanner || spinDismissed || Date.now() - spinSince < (forbiddenLoads ? 5000 : SPIN_LIMIT)) return;
+    var home = BILLING ? '/admin/dashboard' : '/bahmni-v2/home/';
+    spinBanner = el('div', { class: 'vp-stuck', role: 'alert' }, [
+      el('strong', { text: forbiddenLoads ? 'Your role does not have access to this section.' : 'This screen is taking longer than expected.' }),
+      el('span', { text: forbiddenLoads ? ' Go to Home to open the sections available to you, or sign in with a role that has access.'
+        : failedLoads ? ' Part of it could not be loaded from the server.' : ' Your connection or the server may be slow.' }),
+      el('div', { class: 'vp-stuck-actions' }, [
+        el('button', { type: 'button', class: 'vp-stuck-retry', text: 'Try again', onclick: function () { location.reload(); } }),
+        el('button', { type: 'button', text: 'Go to Home', onclick: function () { location.href = home; } }),
+        el('button', { type: 'button', class: 'vp-link', text: 'Dismiss', onclick: function () { spinDismissed = true; spinBanner.remove(); spinBanner = null; } })
+      ])
+    ]);
+    root.appendChild(spinBanner);
+  }
+
   // Bahmni sometimes renders the language selector with no value (blank box): default it to English
   function fixLocale() {
     var loc = document.getElementById("locale");
@@ -729,31 +783,44 @@
     var m = /patient\/([0-9a-f-]{36})/.exec(location.hash);
     if (!m) return;
     var empty = [].filter.call(document.querySelectorAll('div, span, p, td'), function (e) {
-      return !e.children.length && /^\s*No diagnosis for this patient\s*$/i.test(e.textContent) && e.getAttribute('data-vp-dx') !== m[1];
+      return !e.children.length && (/^\s*No diagnosis for this patient\s*$/i.test(e.textContent) || e.getAttribute('data-vp-dx-patient') === m[1]) &&
+        e.getAttribute('data-vp-dx') !== m[1] && !e.hasAttribute('data-vp-dx-loading') && +(e.getAttribute('data-vp-dx-retry') || 0) < Date.now();
     })[0];
     if (!empty) return;
-    empty.setAttribute('data-vp-dx', m[1]);
-    fetch('/openmrs/ws/fhir2/R4/Condition?category=encounter-diagnosis&patient=' + m[1] + '&_count=10&_sort=-_lastUpdated', { credentials: 'same-origin', headers: { Accept: 'application/fhir+json' } })
-      .then(function (r) { return r.json(); })
-      .then(function (b) {
-        var code0 = function (cc) { return (((cc || {}).coding || [])[0] || {}).code || ''; };
-        var cap = function (t) { return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''; };
-        var rows = (b.entry || []).map(function (x) { return x.resource; }).filter(function (c) {
-          return c && !/^(refuted|entered-in-error)$/.test(code0(c.verificationStatus));
-        }).map(function (c) {
-          var code = c.code || {};
-          var name = code.text || ((code.coding || [])[0] || {}).display || 'Diagnosis';
-          var status = [cap(code0(c.verificationStatus)), cap(code0(c.clinicalStatus))].filter(Boolean).join(', ');
-          var when = (c.recordedDate || '').slice(0, 10).split('-').reverse().join('/');
-          return name + (status ? ' - ' + status : '') + (when ? ' (' + when + (c.recorder && c.recorder.display ? ', ' + c.recorder.display : '') + ')' : '');
-        });
-        // the user may have moved to another patient while this was loading
-        if (!rows.length || location.hash.indexOf(m[1]) < 0) return;
-        var ul = el('ul', { class: 'vp-adt-dx' }, rows.map(function (t) { return el('li', { text: t }); }));
-        empty.textContent = '';
-        empty.appendChild(el('p', { class: 'vp-adt-dx-note', text: 'Diagnoses from consultations (all visits, most recent first):' }));
-        empty.appendChild(ul);
-      }).catch(function () {});
+    empty.setAttribute('data-vp-dx-patient', m[1]);
+    empty.setAttribute('data-vp-dx-loading', '1');
+    var seen = {}, conditions = [];
+    function page(url) {
+      var u = new URL(url, location.origin);
+      if (u.origin !== location.origin || !/^\/openmrs\/ws\/fhir2\/R4\/Condition(?:$|\?)/.test(u.pathname + u.search) || seen[u.href]) return Promise.reject(new Error('Invalid diagnosis pagination'));
+      seen[u.href] = true;
+      return fetch(u.href, { credentials: 'same-origin', headers: { Accept: 'application/fhir+json' } }).then(function (r) {
+        if (!r.ok) throw new Error('Diagnosis request failed');
+        return r.json();
+      }).then(function (b) {
+        if (b.resourceType !== 'Bundle') throw new Error('Invalid diagnosis response');
+        conditions = conditions.concat((b.entry || []).map(function (x) { return x.resource; }));
+        var next = (b.link || []).filter(function (l) { return l.relation === 'next'; })[0];
+        return next ? page(next.url) : conditions;
+      });
+    }
+    page('/openmrs/ws/fhir2/R4/Condition?category=encounter-diagnosis&patient=' + m[1] + '&_count=100&_sort=-_lastUpdated').then(function (all) {
+      if (!empty.isConnected || location.hash.indexOf(m[1]) < 0) return;
+      var code0 = function (cc) { return (((cc || {}).coding || [])[0] || {}).code || ''; };
+      var rows = all.filter(function (c) { return c && c.resourceType === 'Condition' && !/^(refuted|entered-in-error)$/.test(code0(c.verificationStatus)); }).map(function (c) {
+        var code = c.code || {}, status = [code0(c.verificationStatus), code0(c.clinicalStatus)].filter(Boolean).join(', ');
+        return (code.text || ((code.coding || [])[0] || {}).display || 'Diagnosis') + (status ? ' - ' + status : '') + (c.recordedDate ? ' (' + c.recordedDate.slice(0, 10) + ')' : '');
+      });
+      empty.textContent = '';
+      empty.appendChild(el('p', { class: 'vp-adt-dx-note', text: 'Consultation diagnoses across all visits (most recently updated first):' }));
+      if (rows.length) empty.appendChild(el('ul', { class: 'vp-adt-dx' }, rows.map(function (t) { return el('li', { text: t }); })));
+      else empty.appendChild(el('p', { text: 'No consultation diagnoses found.' }));
+      empty.setAttribute('data-vp-dx', m[1]);
+    }).catch(function () {
+      if (location.hash.indexOf(m[1]) < 0) return;
+      empty.textContent = 'Consultation diagnoses unavailable. Retrying shortly...';
+      empty.setAttribute('data-vp-dx-retry', String(Date.now() + 15000));
+    }).then(function () { empty.removeAttribute('data-vp-dx-loading'); });
   }
 
   // In-Patient action buttons (Save / Cancel / Admit / Discharge) share one class; mark Cancel so it is styled as secondary
@@ -792,6 +859,7 @@
     if (lastPage) document.documentElement.classList.remove('vp-page-' + lastPage);
     document.documentElement.classList.add('vp-page-' + id);
     lastPage = id;
+    spinSince = 0; failedLoads = 0; forbiddenLoads = 0; spinDismissed = false;   // a new screen gets its own 25 s
     if (url !== lastUrl) { closePanels(); lastUrl = url; } // keep panels open for in-page changes (e.g. Vitals form)
     else if (!helpPanel.hasAttribute('hidden')) renderHelp();
     loadRole();
@@ -826,7 +894,7 @@
       setTimeout(function () { pending = false; brandAll(); }, 250);
     }).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
     window.addEventListener('hashchange', onRoute);
-    setInterval(function () { onRoute(); placeThemeSwitch(); ensureDeleteButton(); liftAboveBottomBars(); demoLogin(); adtDiagnoses(); markSecondaryButtons(); }, 700);
+    setInterval(function () { onRoute(); spinWatch(); placeThemeSwitch(); ensureDeleteButton(); liftAboveBottomBars(); demoLogin(); adtDiagnoses(); markSecondaryButtons(); }, 700);
     window.addEventListener('resize', liftAboveBottomBars); // SPA routes that don't fire hashchange
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePanels(); });
   }

@@ -463,3 +463,12 @@ html.vp-dark .reg-header, html.vp-dark .cds--header, html.vp-dark .opd-header-wr
 html.vp-dark .tab-item.tab-selected > a, html.vp-dark #vipers-root .vp-ai-btn, html.vp-dark #vipers-root .vp-topswitch { filter: invert(1) hue-rotate(180deg); }
 html.vp-dark img.vipers-logo-img, html.vp-dark .clint-logo-wrapper img, html.vp-dark #vp-brand img { filter: none; }
 html.vp-dark .cds--header img, html.vp-dark .opd-header-wrapper img { filter: none; }
+
+/* spinner watchdog banner: shown when a screen's loading spinner has been up for 25 s */
+#vipers-root .vp-stuck { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 2147483003; width: min(560px, calc(100vw - 32px));
+  box-sizing: border-box; padding: 14px 16px; background: #fff; border: 1.5px solid #f2c94c; border-left: 6px solid #e0a800; border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(15,42,55,.18); font: 14px/1.45 "IBM Plex Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f2a37; }
+#vipers-root .vp-stuck-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+#vipers-root .vp-stuck-actions button { height: 34px; padding: 0 14px; border-radius: 8px; border: 1.5px solid #bcd3cf; background: #fff; color: #0b5f58; font-weight: 600; cursor: pointer; }
+#vipers-root .vp-stuck-actions .vp-stuck-retry { background: #0f766e; border-color: #0f766e; color: #fff; }
+#vipers-root .vp-stuck-actions .vp-link { border: 0; background: none; color: #5b6b7a; text-decoration: underline; }

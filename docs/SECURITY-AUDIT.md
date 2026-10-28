@@ -1,5 +1,7 @@
 # Security and audit guide
 
+> Current code changes require a verified boot-sealed image and metadata scrub before readiness. See [AUDIT-FIXES.md](AUDIT-FIXES.md) for the mandatory rollout and remaining live verification; older deployment descriptions below are not proof these fixes are deployed.
+
 Scope: a demonstration / trial deployment with **fictional data only**. It makes no claim of production-grade clinical
 security or regulatory compliance (e.g. Uganda's Data Protection and Privacy Act). Please audit it with that context,
 and flag anything that would block a production rollout.

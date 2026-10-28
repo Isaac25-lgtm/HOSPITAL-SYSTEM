@@ -1,5 +1,7 @@
 # Hospital trial portal
 
+> Current code changes require a verified boot-sealed image and metadata scrub before readiness. See [AUDIT-FIXES.md](AUDIT-FIXES.md) for the mandatory rollout and remaining live verification; older deployment descriptions below are not proof these fixes are deployed.
+
 Hospitals test the system in their **own private copy**: they open an account (hospital name, username, password), get a
 server of their own with every module behind one login, and the server is **deleted after 5 days** with all its data,
 or earlier if the hospital deletes it itself. At most **3** trial servers exist at once.

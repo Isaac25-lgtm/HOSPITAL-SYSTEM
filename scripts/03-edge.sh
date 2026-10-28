@@ -23,10 +23,13 @@ AI_KEY_LINE=""; AI_ON=false
 if [ -n "$GCP_PROJECT" ]; then AI_KEY_LINE="AI_GCP_SECRET=projects/$GCP_PROJECT/secrets/deepseek-api-key"; AI_ON=true
 elif grep -q '^AI_API_KEY=.' /opt/vipers/secrets/addons.env 2>/dev/null; then AI_ON=true; fi
 AI_ON="${AI_ENABLED:-$AI_ON}"
+# free-text AI answers: off unless chosen (fictional-data demo/trials only); a regeneration keeps the current choice
+FREE_TEXT="${AI_ALLOW_FREE_TEXT:-$(grep -s '^AI_ALLOW_FREE_TEXT=' /opt/vipers/edge/edge.env | cut -d= -f2)}"
 cat > /opt/vipers/edge/edge.env <<EOF
 DEMO_HOSTS=$DEMO_HOSTS
 BILLING_HOSTS=$BILLING_HOSTS
 AI_ENABLED=$AI_ON
+AI_ALLOW_FREE_TEXT=${FREE_TEXT:-false}
 AI_MODEL=${AI_MODEL:-deepseek-flash}
 AI_URL=${AI_URL:-https://api.deepseek.com/chat/completions}
 $AI_KEY_LINE

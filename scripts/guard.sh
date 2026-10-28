@@ -3,6 +3,7 @@
 #  - start any stopped VIPERS/Bahmni container
 #  - restore demo accounts / roles / passwords (OpenMRS) and the Crater cashier
 #  - switch to the real domain once its DNS points at this server
+set -euo pipefail
 export VIPERS_EXPECTED_HOST="$(hostname)"
 S=/opt/vipers/scripts
 LOG=/var/log/vipers-guard.log
@@ -14,11 +15,13 @@ exec 9>/run/vipers-ops.lock
 flock -n 9 || { echo "maintenance in progress: skipping"; exit 0; }
 [ -f /opt/vipers/tenant/setup-running ] && { echo "trial setup in progress: skipping"; exit 0; }
 
+[ ! -f /opt/vipers/maintenance ] || { echo "application intentionally stopped"; exit 0; }
+if [ -f /opt/vipers/tenant/is-tenant ] && [ ! -f /opt/vipers/tenant/configured ]; then echo "unconfigured trial: skipping"; exit 0; fi
 cd /opt/vipers/bahmni-docker/bahmni-lite
-stopped=$(vipers dc ps -a --format '{{.Service}} {{.State}}' 2>/dev/null | awk '$2!="running"{print $1}' | grep -v -E '^$')
+stopped=$(vipers dc ps -a --format '{{.Service}} {{.State}}' 2>/dev/null | awk '$2!="running"{print $1}')
 if [ -n "$stopped" ]; then echo "starting stopped services: $stopped"; vipers up >/dev/null 2>&1; fi
 # running but failing its health check (hung): restart it
-for c in $(docker ps --filter health=unhealthy --format '{{.Names}}'); do echo "restarting unhealthy container: $c"; docker restart "$c" >/dev/null; done
+for c in $(docker ps --filter label=com.docker.compose.project=bahmni-lite --filter health=unhealthy --format '{{.Names}}'); do echo "restarting unhealthy container: $c"; docker restart "$c" >/dev/null; done
 
 # hospital trial servers (tenant-firstboot.sh) keep only the container self-heal: no demo accounts, no DNS switch
 if [ -f /opt/vipers/tenant/is-tenant ]; then echo "hospital trial server: self-heal only"; exit 0; fi

@@ -17,6 +17,8 @@ const GATE_ENABLED = env('GATE_ENABLED', 'true') === 'true';
 const GATE_CODE = env('GATE_CODE', '');
 const GATE_SECRET = env('GATE_SECRET', crypto.randomBytes(32).toString('hex'));
 const GATE_DAYS = +env('GATE_DAYS', 14);
+// Free text can contain identifiers that pattern filters cannot reliably recognise.
+const AI_ALLOW_FREE_TEXT = env('AI_ALLOW_FREE_TEXT', 'false') === 'true';
 const AI_ENABLED = env('AI_ENABLED', 'true') === 'true';
 const AI_URL = env('AI_URL', 'https://api.deepseek.com/chat/completions');
 const AI_MODEL = env('AI_MODEL', 'deepseek-flash');
@@ -235,6 +237,8 @@ async function chat(req, res) {
   const st = findStatic(question, page);
   if (st) { addUsage('static'); return send(res, 200, { answer: st, source: 'help', ms: Date.now() - t0 }); }
 
+  if (!AI_ALLOW_FREE_TEXT) return send(res, 200, { answer: 'Free-text AI is disabled for privacy. Use the Help panel or ask a standard software question without patient details.', source: 'privacy' });
+
   // shared answers only for a first question on the same screen, role and visible controls
   const ck = [page, role, question.toLowerCase().replace(/\s+/g, ' '), crypto.createHash('sha1').update(screen.join('|')).digest('hex')].join('|');
   if (!history.length && cache.has(ck)) { addUsage('static'); return send(res, 200, { answer: cache.get(ck), source: 'cache', ms: Date.now() - t0 }); }
@@ -355,7 +359,7 @@ http.createServer(async (req, res) => {
       return res.end();
     }
     if (p === '/vipers-ai/api/chat' && req.method === 'POST') return await chat(req, res);
-    if (p === '/vipers-ai/api/status') return send(res, 200, { ai: AI_ENABLED, model: AI_MODEL, today: usedToday(), dailyLimit: AI_DAILY_TOKENS, total: usedTotal(), totalLimit: AI_TOTAL_TOKENS });
+    if (p === '/vipers-ai/api/status') return send(res, 200, { ai: AI_ENABLED, freeText: AI_ALLOW_FREE_TEXT, model: AI_MODEL, today: usedToday(), dailyLimit: AI_DAILY_TOKENS, total: usedTotal(), totalLimit: AI_TOTAL_TOKENS });
     if (p.startsWith('/vipers-assets/')) return serveStatic(req, res, p.slice('/vipers-assets/'.length));
     if (p === '/healthz') return send(res, 200, 'ok', 'text/plain');
     send(res, 404, { error: 'not found' });

@@ -47,12 +47,12 @@ const ok = (step, pass, note = '') => { R.push({ step, pass, note }); console.lo
     // ---- restrictions ----
     const api = (method, url, body) => page.evaluate(async ([m, u, bd]) => { const r = await fetch(u, { method: m, headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: bd ? JSON.stringify(bd) : undefined }); return r.status; }, [method, url, body]);
     const sup = await page.evaluate(() => fetch('/openmrs/ws/rest/v1/user?q=superman&v=custom:(uuid)', { headers: { Accept: 'application/json' } }).then(r => r.json()).then(j => (j.results || [])[0] && j.results[0].uuid).catch(() => null));
-    const pw = sup ? await api('POST', `/openmrs/ws/rest/v1/password/${sup}`, { newPassword: 'Hijack12345' }) : 403;
-    ok('Demo admin cannot reset the owner (superman) password', pw >= 400, `HTTP ${pw}`);
+    const pw = sup ? await api('POST', `/openmrs/ws/rest/v1/password/${sup}`, { newPassword: 'Hijack12345' }) : 0;
+    ok('Demo admin cannot reset the owner (superman) password', pw === 403, `HTTP ${pw}`);
     const cu = await api('POST', '/openmrs/ws/rest/v1/user', { username: 'intruder', password: 'Intruder123', person: { names: [{ givenName: 'X', familyName: 'Y' }], gender: 'M' }, roles: [] });
-    ok('Demo admin cannot create user accounts', cu >= 400, `HTTP ${cu}`);
+    ok('Demo admin cannot create user accounts', cu === 403, `HTTP ${cu}`);
     const gp = await api('POST', '/openmrs/ws/rest/v1/systemsetting', { property: 'vipers.test', value: 'x' });
-    ok('Demo admin cannot change system settings', gp >= 400, `HTTP ${gp}`);
+    ok('Demo admin cannot change system settings', gp === 403, `HTTP ${gp}`);
     await page.goto(BASE + '/openmrs/admin', { waitUntil: 'domcontentloaded' });
     ok('Legacy OpenMRS admin is not reachable', /bahmni-v2\/home/.test(page.url()), page.url().replace(BASE, ''));
     await page.locator('#user-global-action-button, button:has-text("Hi,")').first().click();

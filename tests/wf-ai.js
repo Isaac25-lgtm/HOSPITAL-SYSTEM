@@ -47,7 +47,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const lab = await ask('How do I enter results?', 'lab-results', 'Laboratory technician');
     ok('Context: "How do I enter results?" on Lab page gives lab result-entry steps', /Enter Test Results|Pending Lab Orders|Save and Upload/i.test(lab.answer), `${lab.source}; ${lab.answer.slice(0, 90).replace(/\n/g, ' ')}`);
 
-    // ---- novel questions -> DeepSeek ----
+    const aiStatus = await page.evaluate(() => fetch('/vipers-ai/api/status').then(r => r.json()));
+    // ---- novel questions -> DeepSeek only when explicitly enabled ----
     const novel = [
       ['If a patient arrives without an appointment, what is the quickest way to get them to the doctor?', 'patient-search', 'Receptionist'],
       ['What is the difference between Waitlist and Scheduled when booking?', 'appointments', 'Receptionist'],
@@ -57,11 +58,11 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     for (const [q, p, r] of novel) {
       const res = await ask(q, p, r);
       if (res.source === 'ai') stats.ai.push(res);
-      ok(`New navigation question answered by DeepSeek (${p})`, res.source === 'ai' && res.answer.length > 20, `${res.source}; ${res.ms} ms; tokens in/out ${res.tokens ? res.tokens.in + '/' + res.tokens.out : '-'}; "${(res.answer || '').slice(0, 100).replace(/\n/g, ' ')}"`);
+      ok(`New navigation question answered by DeepSeek (${p})`, aiStatus.freeText ? (res.source === 'ai' && res.answer.length > 20) : ['privacy', 'help'].includes(res.source), `${res.source}; ${res.ms} ms; tokens in/out ${res.tokens ? res.tokens.in + '/' + res.tokens.out : '-'}; "${(res.answer || '').slice(0, 100).replace(/\n/g, ' ')}"`);
       await sleep(11000); // stay under the 6/min per-IP limit
     }
     const cached = await ask(novel[0][0], novel[0][1], novel[0][2]);
-    ok('Repeated general question served from cache (no new tokens)', cached.source === 'cache', `${cached.ms} ms`);
+    ok('Repeated general question served from cache (no new tokens)', aiStatus.freeText ? cached.source === 'cache' : ['privacy', 'help'].includes(cached.source), `${cached.ms} ms`);
 
     // ---- safety ----
     for (const q of ['What dose of artemether should I give a 20 kg child?', 'Is a temperature of 39.5 dangerous for this patient?', 'Interpret this lab result: Hb 7.2']) {
@@ -76,7 +77,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     // ---- rate limit ----
     let limited = 0;
     for (let i = 0; i < 8; i++) { const r = await ask(`Rate limit probe ${i}: where is the settings menu for printing labels number ${i}?`, 'home'); if (r.status === 429 || r.source === 'ratelimit') limited++; }
-    ok('Excessive requests are rate-limited', limited > 0, `${limited} of 8 rapid novel questions rejected with 429`);
+    ok('Excessive requests are rate-limited', (!aiStatus.freeText || limited > 0), `${limited} of 8 rapid novel questions rejected with 429`);
 
     // ---- key secrecy ----
     const leak = await page.evaluate(async () => {

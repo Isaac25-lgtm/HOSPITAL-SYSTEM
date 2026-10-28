@@ -55,6 +55,12 @@ function save() {
   } catch (e) { console.error('trial store write failed:', e.message); return false; }
 }
 const holding = () => trials.filter(t => HOLDS_SLOT.includes(t.status));
+let reconciliation = null;
+async function admissionCheck() {
+  // Share one cloud check among simultaneous callers, then reserve synchronously below.
+  if (!reconciliation) reconciliation = reconcile().finally(() => { reconciliation = null; });
+  await reconciliation;
+}
 
 // ---------- Compute Engine API (service account token from the metadata server) ----------
 const mdGet = async p => {
@@ -125,6 +131,16 @@ VIPERS_EXPECTED_HOST="$(hostname)" bash $F
 async function signup(body) {
   const v = validate(body);
   if (v.error) return { status: 400, body: { error: v.error } };
+  let placement;
+  try {
+    await admissionCheck();
+    placement = await whoami();
+    const image = await gce('GET', `/global/images/${TRIAL_IMAGE}`);
+    if (image.labels?.['vipers-boot-sealed'] !== 'v1') throw new Error('trial image is not boot-sealed v1');
+  } catch (e) {
+    console.error('trial admission unavailable:', e.message);
+    return { status: 503, body: { error: 'Trial setup is temporarily unavailable. Please try again later.' } };
+  }
   const now = Date.now(), expires = new Date(now + TRIAL_DAYS * 86400e3).toISOString();
   if (CONTROLLER_UNTIL && Date.parse(expires) > Date.parse(CONTROLLER_UNTIL))
     return { status: 503, body: { error: 'New trial spaces are paused at the moment. Please contact Motion Imprints Technologies.' } };
@@ -134,7 +150,7 @@ async function signup(body) {
   const id = crypto.randomBytes(6).toString('hex'), slug = slugify(v.hospital);
   // lets the hospital delete its own space later; only the hash is kept here
   const deleteToken = crypto.randomBytes(24).toString('hex');
-  const t = { id, hospital: v.hospital, username: v.username, slug, vm: `vh-${slug}-${id.slice(0, 4)}`.slice(0, 60), zone: '',
+  const t = { id, hospital: v.hospital, username: v.username, slug, vm: `vh-${slug}-${id.slice(0, 4)}`.slice(0, 60), zone: placement.zone, submitted: false,
     created: new Date(now).toISOString(), expires, billingEmail: `${v.username}@vipers.trial`, status: 'creating',
     deleteHash: crypto.createHash('sha256').update(deleteToken).digest('hex') };
   trials.push(t);
@@ -149,11 +165,16 @@ async function signup(body) {
       { key: 'vipers-hospital', value: v.hospital }, { key: 'vipers-username', value: v.username },
       { key: 'vipers-password', value: v.password }, { key: 'vipers-expires', value: expires },
       { key: 'vipers-billing-email', value: t.billingEmail }, { key: 'vipers-controller', value: CONTROLLER_URL },
+      { key: 'vipers-ai-free-text', value: env('AI_ALLOW_FREE_TEXT', 'false') === 'true' ? 'true' : 'false' },
       { key: 'vipers-trial-id', value: id }, { key: 'vipers-delete-token', value: deleteToken },
+      { key: 'vipers-delete-hash', value: t.deleteHash },
       // current add-on code, so servers made from an older image run the same portal/AI/self-delete logic
       { key: 'vipers-addons-server', value: readOwnFile('server.js') }, { key: 'vipers-addons-help', value: readOwnFile('help.js') },
       { key: 'vipers-addons-trial', value: readOwnFile('trial.js') }].filter(i => i.value);
-    await gce('POST', `/zones/${s.zone}/instances`, {
+    // Persist intent before dispatch: a timeout/crash after dispatch must retain the slot.
+    t.submitted = true;
+    if (!save()) { t.submitted = false; throw new Error('cannot persist create intent'); }
+    await waitOp(await gce('POST', `/zones/${s.zone}/instances`, {
       name: t.vm, machineType: `zones/${s.zone}/machineTypes/${TRIAL_MACHINE}`,
       labels: { 'vipers-trial': '1', 'vipers-trial-id': id, 'vipers-expires': String(Math.floor(Date.parse(expires) / 1000)) },
       tags: { items: s.tags },
@@ -163,11 +184,11 @@ async function signup(body) {
       networkInterfaces: [{ network: s.network, accessConfigs: [{ type: 'ONE_TO_ONE_NAT', name: 'External NAT', networkTier: 'PREMIUM' }] }],
       serviceAccounts: [{ email: TRIAL_SA || s.sa, scopes: ['https://www.googleapis.com/auth/cloud-platform'] }],
       metadata: { items },
-    });
+    }));
   } catch (e) {
     console.error('trial create', e.message);
     // only a definite rejection frees the slot; after a timeout the server may exist, so the sweep decides
-    if (e.status >= 400 && e.status < 500 && !(t.zone && await instance(t).catch(() => true))) { t.status = 'failed'; t.error = e.message; }
+    if (!t.submitted || (e.status >= 400 && e.status < 500 && !(t.zone && await instance(t).catch(() => true)))) { t.status = 'failed'; t.error = e.message; }
     else t.uncertain = true;
     save();
     return { status: 500, body: { error: 'Could not create the trial space right now. Please try again later.' } };
@@ -185,13 +206,19 @@ async function scrubPassword(t, inst) {
   const md = inst.metadata || {};
   if (!(md.items || []).some(i => SECRET_KEYS.includes(i.key))) { t.scrubbed = true; return; }
   try {
-    await waitOp(await gce('POST', `/zones/${t.zone}/instances/${t.vm}/setMetadata`, { fingerprint: md.fingerprint, items: md.items.filter(i => !SECRET_KEYS.includes(i.key)) }));
+    const items = (md.items || []).filter(i => !SECRET_KEYS.includes(i.key));
+    if (t.deleteHash && !items.some(i => i.key === 'vipers-delete-hash')) items.push({ key: 'vipers-delete-hash', value: t.deleteHash });
+    await waitOp(await gce('POST', `/zones/${t.zone}/instances/${t.vm}/setMetadata`, { fingerprint: md.fingerprint, items }));
+    const verified = await instance(t);
+    if (!verified || (verified.metadata?.items || []).some(i => SECRET_KEYS.includes(i.key))) throw new Error('bootstrap secrets still present');
     t.scrubbed = true;
   } catch (e) { console.error('trial metadata scrub (will retry)', t.vm, e.message); }
 }
 
 async function refresh(t) {
   if (!['creating', 'ready'].includes(t.status) || !t.zone) return t;
+  // Old registry versions could publish ready before scrubbing; fail closed on upgrade.
+  if (t.status === 'ready' && !t.scrubbed) t.status = 'creating';
   try {
     const inst = await instance(t);
     if (!inst) {
@@ -201,13 +228,20 @@ async function refresh(t) {
     }
     t.uncertain = false;
     t.ip = natIp(inst) || t.ip;          // follows a new address after a stop/start
+    let hospitalReady = t.status === 'ready';
     if (t.status === 'creating' && t.ip) {
       const r = await fetch(`https://demo.${t.ip.replace(/\./g, '-')}.sslip.io/vipers-assets/site.json`, { redirect: 'error', signal: AbortSignal.timeout(8000) }).catch(() => null);
       const site = r && r.ok ? await r.json().catch(() => null) : null;
-      if (site && site.mode === 'hospital') { t.status = 'ready'; t.ready = new Date().toISOString(); console.log(`trial ready ${t.vm} ${t.ip}`); }
+      if (site && site.mode === 'hospital') hospitalReady = true;
       if (site && site.mode === 'hospital-failed') { t.setupFailed = true; }
     }
-    if (t.status === 'ready' && !t.scrubbed) await scrubPassword(t, inst);
+    if (hospitalReady) {
+      // Recheck even a previously ready record: do not trust a cached scrub flag.
+      t.scrubbed = false;
+      await scrubPassword(t, inst);
+      t.status = t.scrubbed ? 'ready' : 'creating';
+      if (t.scrubbed) t.ready ||= new Date().toISOString();
+    }
   } catch (e) { console.error('trial refresh', t.vm, e.message); }
   save();
   return t;
@@ -215,6 +249,11 @@ async function refresh(t) {
 
 // delete and confirm; the record keeps its slot (status deleting) until the server is really gone
 async function remove(t, reason) {
+  if (!t.zone) {
+    const s = await whoami();
+    t.zone = s.zone;
+    if (!(await instance(t))) { t.status = 'failed'; t.error = 'unsubmitted reservation recovered'; save(); return; }
+  }
   try {
     if (t.status !== 'deleting' || Date.now() - Date.parse(t.deleteRequested || 0) > 10 * 60e3) {
       t.status = 'deleting'; t.reason = t.reason || reason; t.deleteRequested = new Date().toISOString(); save();
@@ -239,7 +278,9 @@ async function reconcile() {
     const expires = l['vipers-expires'] ? new Date(+l['vipers-expires'] * 1000).toISOString()
       : (mdv('vipers-expires') || new Date(Date.parse(created) + TRIAL_DAYS * 86400e3).toISOString());
     trials.push({ id: l['vipers-trial-id'] || crypto.randomBytes(6).toString('hex'), hospital: mdv('vipers-hospital') || inst.name, username: mdv('vipers-username'),
-      vm: inst.name, zone: s.zone, created, expires, status: 'creating', adopted: true });
+      vm: inst.name, zone: s.zone, created, expires, status: 'creating', adopted: true,
+      deleteHash: /^[a-f0-9]{64}$/.test(mdv('vipers-delete-hash')) ? mdv('vipers-delete-hash') :
+        (mdv('vipers-delete-token') ? crypto.createHash('sha256').update(mdv('vipers-delete-token')).digest('hex') : undefined) });
     console.error('trial adopted from the cloud (not in registry):', inst.name);
   }
   save();
@@ -365,4 +406,4 @@ async function handle(req, res, p, send, limited) {
   return false;
 }
 
-module.exports = { handle, TRIAL_MAX, TRIAL_DAYS, _test: { signup, sweep, deleteRequest, trials: () => trials } };
+module.exports = { handle, TRIAL_MAX, TRIAL_DAYS, _test: { signup, sweep, refresh, deleteRequest, trials: () => trials } };

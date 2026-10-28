@@ -82,7 +82,7 @@ async function pick(page, inputSel, query, optionText) {
     const tDone = Date.now();
     await page.click('button:has-text("Done")');
     const toast = await page.locator('.cds--toast-notification, .cds--inline-notification, [role=status]').filter({ hasText: /success|saved|error|fail/i }).first().textContent({ timeout: 30000 }).catch(() => '');
-    ok('Save consultation (Done)', /success|saved/i.test(toast) || !/error|fail/i.test(toast), `${Date.now() - tDone} ms; toast="${(toast || '').trim().replace(/\s+/g, ' ').slice(0, 80)}"`);
+    ok('Save consultation (Done)', /success|saved/i.test(toast) && !/error|fail/i.test(toast), `${Date.now() - tDone} ms; toast="${(toast || '').trim().replace(/\s+/g, ' ').slice(0, 80)}"`);
     await page.waitForTimeout(4000);
     await shot(page, 'wf-doc-5-saved');
 

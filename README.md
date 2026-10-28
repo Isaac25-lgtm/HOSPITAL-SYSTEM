@@ -5,7 +5,7 @@ Crater billing), built by Motion Imprints Technologies for hospital trials in Ug
 the **unmodified** upstream release: VIPERS adds an edge proxy, an in-page layer, configuration overlays, operations
 scripts, an AI navigation helper, a self-service **hospital trial portal** and an automated acceptance-test suite.
 
-> This repository contains **no passwords, keys or patient data**. Secrets are generated on each server at install time
+> This repository contains **public demo passwords** and fictional example data, but no intended private deployment secrets or real patient records. Private secrets are generated on each server at install time
 > (`/opt/vipers/secrets/`, root-only) and the AI key lives in Google Secret Manager. All data is fictional.
 
 ## What it does
@@ -62,3 +62,5 @@ through Google IAP (nothing is installed on the PC).
 
 Bahmni, OpenMRS and Crater are used under their upstream licences (see the in-app *About & licences* page,
 `edge/addons/public/about.html`). VIPERS additions are by Motion Imprints Technologies.
+
+Current audit fixes and required deployment steps: [docs/AUDIT-FIXES.md](docs/AUDIT-FIXES.md). Free-text external AI forwarding is disabled by default; standard help remains available.

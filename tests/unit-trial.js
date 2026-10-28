@@ -7,12 +7,13 @@ const R = [];
 const ok = (step, pass, note = '') => { R.push({ step, pass, note }); console.log(`${pass ? 'PASS' : 'FAIL'} | ${step}${note ? ' | ' + note : ''}`); };
 
 // ---- fake cloud ----
-const cloud = { instances: new Map(), inserts: 0, deletes: 0, deleteStatus: 200 };
+const cloud = { instances: new Map(), inserts: 0, deletes: 0, deleteStatus: 200, metadataStatus: 200, listStatus: 200, scrubStatus: 200, ready: false, sealed: true };
 const resp = (status, body) => ({ ok: status < 400, status, json: async () => body, text: async () => (typeof body === 'string' ? body : JSON.stringify(body)) });
 global.fetch = async (url, opts = {}) => {
   const m = opts.method || 'GET';
   await new Promise(r => setTimeout(r, 5));                       // every call yields, like the network
   if (url.includes('metadata.google.internal')) {
+    if (cloud.metadataStatus !== 200) return resp(cloud.metadataStatus, 'metadata unavailable');
     if (url.endsWith('/project/project-id')) return resp(200, 'proj');
     if (url.endsWith('/instance/zone')) return resp(200, 'projects/1/zones/z1');
     if (url.endsWith('/instance/tags')) return resp(200, '["vipers-web"]');
@@ -22,19 +23,20 @@ global.fetch = async (url, opts = {}) => {
   }
   if (url.includes('compute.googleapis.com')) {
     const op = { name: 'op1', zone: 'zones/z1', status: 'DONE' };
+    if (url.includes('/global/images/')) return resp(200, { labels: cloud.sealed ? { 'vipers-boot-sealed': 'v1' } : {} });
     if (m === 'POST' && /\/instances$/.test(url)) {
       const b = JSON.parse(opts.body); cloud.inserts++;
       cloud.instances.set(b.name, { name: b.name, labels: b.labels, metadata: { fingerprint: 'f', items: b.metadata.items }, creationTimestamp: new Date().toISOString(), networkInterfaces: [{ accessConfigs: [{ natIP: '10.1.1.1' }] }] });
       return resp(200, op);
     }
-    if (m === 'GET' && url.includes('/instances?filter=')) return resp(200, { items: [...cloud.instances.values()] });
+    if (m === 'GET' && url.includes('/instances?filter=')) return resp(cloud.listStatus, cloud.listStatus === 200 ? { items: [...cloud.instances.values()] } : { error: { message: 'listing denied' } });
     const name = (url.match(/\/instances\/([^/?]+)/) || [])[1];
     if (m === 'DELETE') { cloud.deletes++; if (cloud.deleteStatus !== 200) return resp(cloud.deleteStatus, { error: { message: 'denied' } }); cloud.instances.delete(name); return resp(200, op); }
     if (m === 'GET' && url.includes('/operations/')) return resp(200, op);
     if (m === 'GET' && name) return cloud.instances.has(name) ? resp(200, cloud.instances.get(name)) : resp(404, { error: { message: 'not found' } });
-    if (m === 'POST' && url.endsWith('/setMetadata')) return resp(200, op);
+    if (m === 'POST' && url.endsWith('/setMetadata')) { if (cloud.scrubStatus !== 200) return resp(cloud.scrubStatus, { error: { message: 'scrub denied' } }); cloud.instances.get(name).metadata.items = JSON.parse(opts.body).items; return resp(200, op); }
   }
-  if (url.includes('sslip.io')) return resp(404, {});
+  if (url.includes('sslip.io')) return cloud.ready ? resp(200, { mode: 'hospital' }) : resp(404, {});
   return resp(500, {});
 };
 
@@ -45,6 +47,10 @@ const T = trial._test;
 const body = (u, h = 'Test Hospital') => ({ hospital: h, username: u, password: 'password123' });
 
 (async () => {
+  cloud.metadataStatus = 503;
+  const discovery = await T.signup(body('discoveryfailure'));
+  ok('metadata discovery failure creates no reservation or VM', discovery.status === 503 && T.trials().length === 0 && cloud.inserts === 0);
+  cloud.metadataStatus = 200;
   // 1. same username four times at once: one reservation, one server
   let r = await Promise.all([1, 2, 3, 4].map(() => T.signup(body('samename'))));
   ok('concurrent signups with one username create exactly one server', cloud.inserts === 1 && r.filter(x => x.status === 200).length === 1,
@@ -91,9 +97,46 @@ const body = (u, h = 'Test Hospital') => ({ hospital: h, username: u, password: 
   ok('self-deleted space is removed from the cloud', live.status === 'deleted' && !cloud.instances.has(live.vm), live.status);
   ok('delete token is not stored in the registry', !JSON.stringify(T.trials()).includes(tok));
 
+  // A historical empty-zone reservation must not hold capacity forever.
+  T.trials().push({ id: 'legacy-empty', vm: 'never-created', zone: '', status: 'creating', created: new Date(Date.now()-50*60e3).toISOString(), expires: new Date(Date.now()+86400e3).toISOString() });
+  await T.sweep();
+  ok('legacy empty-zone reservation is released when cloud confirms no instance', T.trials().find(t => t.id === 'legacy-empty').status === 'failed');
+
   // 7. registry is a valid JSON file after all of this
   let parsed = null; try { parsed = JSON.parse(fs.readFileSync(path.join(process.env.DATA_DIR, 'trials.json'), 'utf8')); } catch {}
   ok('registry on disk is valid and complete', Array.isArray(parsed) && parsed.length === T.trials().length);
+
+  // Recovery must happen before admission, even immediately after registry loss.
+  const surviving = [...cloud.instances.values()];
+  T.trials().splice(0);
+  cloud.listStatus = 503;
+  const beforeInserts = cloud.inserts;
+  let recovered = await T.signup(body('beforelist'));
+  ok('cloud listing failure blocks admission without creating a reservation', recovered.status === 503 && T.trials().length === 0 && cloud.inserts === beforeInserts);
+  cloud.listStatus = 200;
+  // Fill cloud to capacity without registry entries.
+  for (let i = cloud.instances.size; i < trial.TRIAL_MAX; i++) cloud.instances.set('extra-' + i, { name: 'extra-' + i, labels: { 'vipers-trial': '1', 'vipers-expires': String(Math.floor(Date.now()/1000) + 86400) }, metadata: { items: [] }, creationTimestamp: new Date().toISOString() });
+  recovered = await T.signup(body('afterloss'));
+  ok('immediate signup after registry loss cannot exceed cloud capacity', recovered.status === 503 && cloud.instances.size === trial.TRIAL_MAX);
+  const adoptedLive = surviving[0];
+  const recoveredRecord = T.trials().find(t => t.vm === adoptedLive.name);
+  const originalToken = adoptedLive.metadata.items.find(i => i.key === 'vipers-delete-token').value;
+  ok('adoption restores only the deletion verifier, not the secret token', !!recoveredRecord.deleteHash && !JSON.stringify(recoveredRecord).includes(originalToken));
+  // A ready probe is insufficient while metadata scrubbing is denied.
+  cloud.ready = true; cloud.scrubStatus = 403;
+  await T.refresh(recoveredRecord);
+  ok('ready probe cannot publish ready while bootstrap secrets remain', recoveredRecord.status === 'creating' && !recoveredRecord.scrubbed);
+  cloud.scrubStatus = 200;
+  await T.refresh(recoveredRecord);
+  ok('successful metadata scrub permits readiness', recoveredRecord.status === 'ready' && recoveredRecord.scrubbed && !adoptedLive.metadata.items.some(i => ['vipers-password', 'vipers-delete-token'].includes(i.key)));
+  // Recovery after scrubbing retains the verifier in nonsecret metadata.
+  T.trials().splice(0); await T.sweep();
+  const readyAdopted = T.trials().find(t => t.vm === adoptedLive.name);
+  ok('post-scrub recovered trial accepts its original self-delete token', T.deleteRequest({ id: readyAdopted.id, token: originalToken }).status === 202);
+  await new Promise(r => setTimeout(r, 100));
+  cloud.instances.clear(); T.trials().splice(0); cloud.sealed = false;
+  const unsealed = await T.signup(body('unsafeimage'));
+  ok('unsealed image is refused before reserving or creating', unsealed.status === 503 && T.trials().length === 0 && cloud.instances.size === 0);
 
   const failed = R.filter(x => !x.pass).length;
   console.log('RESULTS ' + JSON.stringify(R));

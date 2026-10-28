@@ -32,7 +32,7 @@ const everything = () => JSON.stringify(sent);
   await new Promise(r => provider.listen(19999, r));
   const data = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-'));
   const srv = spawn('node', [path.join(APP, 'server.js')], { env: { ...process.env, PORT: '18080', DATA_DIR: data, AI_URL: 'http://127.0.0.1:19999/v1', AI_API_KEY: 'test-key',
-    GATE_ENABLED: 'false', GATE_CODE: 'kampala-1234', TRIAL_PORTAL: 'false', AI_IP_PER_MINUTE: '100', AI_IP_PER_DAY: '1000' }, stdio: ['ignore', 'pipe', 'pipe'] });
+    AI_ALLOW_FREE_TEXT: 'true', GATE_ENABLED: 'false', GATE_CODE: 'kampala-1234', TRIAL_PORTAL: 'false', AI_IP_PER_MINUTE: '100', AI_IP_PER_DAY: '1000' }, stdio: ['ignore', 'pipe', 'pipe'] });
   let exited = null; srv.on('exit', c => { exited = c; });
   for (let i = 0; i < 50 && !(await alive()); i++) await wait(100);
 

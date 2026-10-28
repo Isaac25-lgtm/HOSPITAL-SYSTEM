@@ -43,3 +43,5 @@ docker run --rm -v /opt/vipers/edge/addons:/app:ro -v /opt/vipers/tests:/t:ro no
 3. `tests/wf-trial-delete.js BASE=<trial url> HUSER=… HPASS=… [DELETE=1]`: hospital sign-in notice, no role cards,
    TRIAL label, **Delete account** button, confirmation dialog (a wrong password is refused), and with
    `DELETE=1` the deletion itself; then confirm the server disappears from the cloud.
+
+Later source fixes and local verification are tracked in [AUDIT-FIXES.md](AUDIT-FIXES.md); earlier live verification claims above apply to the historical deployment, not these changes.

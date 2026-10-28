@@ -7,8 +7,8 @@ DC=(docker compose --env-file .env.vipers -f docker-compose.yml -f docker-compos
 [ -f docker-compose.edge.yml ] && DC+=(-f docker-compose.edge.yml)
 
 case "${1:-ps}" in
-  up)      "${DC[@]}" up -d --remove-orphans ;;
-  down)    "${DC[@]}" stop ;;                       # stop only: never removes volumes
+  up)      "${DC[@]}" up -d --remove-orphans; rm -f /opt/vipers/maintenance ;;
+  down)    touch /opt/vipers/maintenance; "${DC[@]}" stop ;;                       # stop only: never removes volumes
   restart) shift; "${DC[@]}" restart "$@" ;;
   ps)      "${DC[@]}" ps --format 'table {{.Service}}\t{{.Status}}' ;;
   logs)    shift; "${DC[@]}" logs --tail=200 -f "$@" ;;

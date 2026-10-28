@@ -1,6 +1,6 @@
 # Ask Vipers AI – integration notes
 
-Ask Vipers AI is a **navigation helper** for VIPERS HOSPITAL. It explains where to click and which steps to follow. It is **not** a clinical decision tool: it never diagnoses, recommends treatment or doses, interprets results, reads patient records, or changes data.
+Ask Vipers AI is a **navigation helper** for VIPERS HOSPITAL. It explains where to click and which steps to follow. It is **not** a clinical decision tool: it is intended to avoid diagnoses, treatment/dosing and result interpretation. Its prompt is not a clinical safety guarantee; the helper does not write patient records.
 
 ## How it works
 
@@ -18,14 +18,14 @@ Browser (vipers.js)                    vipers-addons (Node 22, on the server)   
 ```
 
 - **Model:** `deepseek-flash` (confirmed in the live `/models` list on 25 Oct 2026). Endpoint: `https://api.deepseek.com/chat/completions` (OpenAI-compatible).
-- **Context sent:** current screen id (e.g. `lab-results`), role name (e.g. `Doctor`), the question, at most the last 4 chat turns, and the verified help steps for that screen. **No patient data and no application state is sent.**
+- **Context sent:** current screen id (e.g. `lab-results`), role name (e.g. `Doctor`), the question, at most the last 4 chat turns, and the verified help steps for that screen. Free-text forwarding is disabled by default (AI_ALLOW_FREE_TEXT=false). With explicit opt-in, question/history and filtered screen labels reach the provider; regex filters cannot guarantee removal of identifiers.
 - **Page awareness:** the browser reports the screen id; the server adds that screen's verified steps, so "How do I enter results?" on the Lab screen gets lab steps.
-- **Answer length:** system prompt asks for at most 150 words; hard cap `AI_MAX_OUTPUT_TOKENS=300`.
+- **Answer length:** system prompt asks for at most 170 words; hard cap `AI_MAX_OUTPUT_TOKENS=300`.
 
 ## The API key
 
 - Stored only in **Google Secret Manager**, secret `deepseek-api-key` in project `vipers-hospital-demo` (region africa-south1).
-- The VM's service account `vipers-vm@` has *secretAccessor* on that one secret and no other roles.
+- The VM's service account `vipers-vm@` has permissions described in docs/SECURITY-AUDIT.md; the controller requires instance-management rights, and trials still inherit that identity unless TRIAL_SA is configured.
 - vipers-addons fetches the key from Secret Manager via the VM metadata server and re-reads it at least hourly. It is never written to disk, logs, the browser or the kit.
 - Verified in testing: no `sk-…` pattern appears in any page, script, asset or status response, and the browser never contacts DeepSeek.
 
@@ -68,3 +68,5 @@ Logs record only page, role, token counts and timing, never the question text.
 - **Offline:** set `AI_ENABLED=false`. The ? Help panel, quick tips, walkthrough and the full guide (`/vipers-assets/help.html`) all work without internet.
 - **Own provider:** any OpenAI-compatible API works. Set `AI_URL`, `AI_MODEL`, and provide the key with `AI_API_KEY_FILE=/run/secrets/ai_key` (a root-only file mounted into the container) instead of `AI_GCP_SECRET`. Nothing is hard-coded to Motion Imprints' DeepSeek account.
 - Help content lives in `edge/addons/public/help.json` and can be edited without rebuilding (mounted read-only into the container).
+
+Free-text provider use now requires explicit AI_ALLOW_FREE_TEXT=true. Keep this off for real records pending privacy approval; filters are defence in depth. The unit AI suite opts in only against its fake provider.

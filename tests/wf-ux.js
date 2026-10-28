@@ -46,7 +46,7 @@ const check = page => page.evaluate(() => {
       const done = page.locator('button:has-text("Done")').last();
       const box = await done.boundingBox();
       const top = box && await page.evaluate(([x, y]) => { const e = document.elementFromPoint(x, y); return e && (e.closest('#vipers-root') ? 'VIPERS' : (e.innerText || '').trim().slice(0, 20)); }, [box.x + box.width / 2, box.y + box.height / 2]);
-      ok(`${name} consultation: Done button remains reachable with Ask Vipers AI open`, top !== 'VIPERS', `element at Done centre: ${top}`);
+      ok(`${name} consultation: Done button remains reachable with Ask Vipers AI open`, top === 'Done', `element at Done centre: ${top}`);
       await shot(page, `ux-${name}-consult-ai-open`);
       await page.click('#vipers-root .vp-ai .vp-x');
       await page.locator('button:has-text("Cancel")').last().click().catch(() => {});
