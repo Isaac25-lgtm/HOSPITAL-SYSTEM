@@ -63,7 +63,7 @@ Verification added with this change:
 
 ## New with this change: hospitals can delete their own space
 
-A signed-in hospital sees **Delete hospital space** in the top bar. The dialog asks for the username; the hospital's
+A signed-in hospital sees **Delete account** in the top bar. The dialog asks for the username; the hospital's
 server checks that the browser's OpenMRS session belongs to the hospital account, then asks the main server to delete it
 with a per-server secret token (created at sign-up, only its SHA-256 kept in the registry, removed from instance metadata
 once the server is ready). The main server deletes the server and frees the slot. See `docs/TRIAL-PORTAL.md`.

@@ -14,7 +14,7 @@ const ok = (step, pass, note = '') => { R.push({ step, pass, note }); console.lo
     await login(page, process.env.HUSER, process.env.HPASS);
     ok('hospital account signs in', /bahmni-v2\/home|dashboard/.test(page.url()), page.url());
     const del = page.locator('#vp-del');
-    ok('"Delete hospital space" is offered right after signing in', await del.waitFor({ timeout: 15000 }).then(() => true).catch(() => false));
+    ok('"Delete account" is offered right after signing in', await del.waitFor({ timeout: 15000 }).then(() => true).catch(() => false));
     ok('header label says TRIAL', (await page.locator('#vp-hdr-badge').textContent().catch(() => '')) === 'TRIAL');
     await shot(page, 'trial-home-delete-button');
     await del.click();

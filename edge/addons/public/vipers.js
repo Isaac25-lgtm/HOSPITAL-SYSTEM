@@ -592,14 +592,14 @@
     if (u && SITE.username && !u.value) setVal(u, SITE.username);
   }
 
-  // "Delete hospital space": shown to the signed-in hospital as soon as it is past the sign-in page. Our own dialog
+  // "Delete account": shown to the signed-in hospital as soon as it is past the sign-in page. Our own dialog
   // (no browser pop-ups); the hospital types its username to confirm. The server checks the session again.
   function ensureDeleteButton() {
     if (!SITE || SITE.mode !== 'hospital' || BILLING || /login/i.test(location.hash || '') || !document.body) return;
     var hdrTag = document.getElementById('vp-hdr-badge');
     if (hdrTag && hdrTag.textContent !== 'TRIAL') { hdrTag.textContent = 'TRIAL'; hdrTag.title = SITE.hospital + ' - all data is deleted on ' + trialDate(); }
     if (document.getElementById('vp-del')) return;
-    var b = el('button', { id: 'vp-del', type: 'button', class: 'vp-del-btn', text: 'Delete hospital space', title: 'Delete this hospital space and all its data now', onclick: openDeleteDialog });
+    var b = el('button', { id: 'vp-del', type: 'button', class: 'vp-del-btn', text: 'Delete account', title: 'Delete this hospital account and all its data now', onclick: openDeleteDialog });
     if (hdrTag && hdrTag.parentNode) hdrTag.parentNode.insertBefore(b, hdrTag.nextSibling);
     else { var badge = root && root.querySelector('.vp-badge'); if (badge) badge.appendChild(b); }
   }
@@ -608,11 +608,11 @@
     var input = el('input', { type: 'text', autocomplete: 'off', 'aria-label': 'Type your username to confirm', placeholder: SITE.username });
     var go = el('button', { type: 'button', class: 'vp-del-go', text: 'Delete permanently', disabled: '' });
     var msg = el('p', { class: 'vp-del-msg', role: 'status' });
-    var ov = el('div', { class: 'vp-overlay vp-del-dialog', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Delete hospital space' });
+    var ov = el('div', { class: 'vp-overlay vp-del-dialog', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Delete account' });
     var close = function () { ov.remove(); };
     var box = el('div', { class: 'vp-tour' }, [
-      el('h2', { text: 'Delete this hospital space?' }),
-      el('p', { text: 'This permanently deletes the hospital space of ' + SITE.hospital + ' with all its patients, visits, results and invoices. It cannot be undone. (Otherwise it is deleted automatically on ' + trialDate() + '.)' }),
+      el('h2', { text: 'Delete this account?' }),
+      el('p', { text: 'This permanently deletes the account of ' + SITE.hospital + ' and its whole hospital space, with all its patients, visits, results and invoices. It cannot be undone. (Otherwise it is deleted automatically on ' + trialDate() + '.)' }),
       el('label', { class: 'vp-del-label', text: 'Type your username (' + SITE.username + ') to confirm:' }), input, msg,
       el('div', { class: 'vp-tour-actions' }, [el('button', { type: 'button', class: 'vp-link', text: 'Cancel', onclick: close }), el('span', { class: 'vp-grow' }), go])
     ]);
@@ -622,13 +622,13 @@
       fetch('/vipers-trial/api/self-delete', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: input.value.trim() }) })
         .then(function (r) { return r.json().then(function (j) { return { ok: r.status === 202, j: j }; }); })
         .then(function (x) {
-          if (!x.ok) { msg.textContent = (x.j && x.j.error) || 'The space could not be deleted. Please try again.'; go.removeAttribute('disabled'); return; }
+          if (!x.ok) { msg.textContent = (x.j && x.j.error) || 'The account could not be deleted. Please try again.'; go.removeAttribute('disabled'); return; }
           box.textContent = '';
-          box.appendChild(el('h2', { text: 'Your hospital space is being deleted' }));
+          box.appendChild(el('h2', { text: 'Your account is being deleted' }));
           box.appendChild(el('p', { text: 'All data of ' + SITE.hospital + ' is being removed. This page will stop working within a few minutes. Thank you for trying VIPERS HOSPITAL.' }));
           fetch('/openmrs/ws/rest/v1/session', { method: 'DELETE', credentials: 'same-origin' }).catch(function () {});
         })
-        .catch(function () { msg.textContent = 'The space could not be deleted. Please check the connection and try again.'; go.removeAttribute('disabled'); });
+        .catch(function () { msg.textContent = 'The account could not be deleted. Please check the connection and try again.'; go.removeAttribute('disabled'); });
     });
     ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
     ov.appendChild(box); root.appendChild(ov); input.focus();

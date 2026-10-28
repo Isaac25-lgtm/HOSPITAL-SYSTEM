@@ -41,5 +41,5 @@ docker run --rm -v /opt/vipers/edge/addons:/app:ro -v /opt/vipers/tests:/t:ro no
 2. Server-side checks: hospital login works; public demo passwords and default passwords are refused; password and delete
    token removed from the instance metadata; billing reachable.
 3. `tests/wf-trial-delete.js BASE=<trial url> HUSER=… HPASS=… [DELETE=1]`: hospital sign-in notice, no role cards,
-   TRIAL label, **Delete hospital space** button, confirmation dialog (wrong username keeps it disabled), and with
+   TRIAL label, **Delete account** button, confirmation dialog (wrong username keeps it disabled), and with
    `DELETE=1` the deletion itself; then confirm the server disappears from the cloud.

@@ -50,7 +50,7 @@ Runs on every boot; configures once (`/opt/vipers/tenant/configured`).
 
 ## Hospitals deleting their own space
 
-After signing in, the hospital sees **Delete hospital space** in the top bar (next to TRIAL). The dialog explains that all
+After signing in, the hospital sees **Delete account** in the top bar (next to TRIAL). The dialog explains that all
 data is deleted permanently and asks for the username. Then:
 
 1. `POST /vipers-trial/api/self-delete` on the hospital's server: only in hospital mode; the OpenMRS session from the
