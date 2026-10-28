@@ -447,8 +447,8 @@ html.vp-dark .bed-assignment li.col, html.vp-dark [style*="background-image"] { 
 #vipers-root .vp-topswitch[aria-checked="true"] .vp-ts-knob { left: 24px; background: #e2e8f0; }
 html.vp-page-login #vipers-root .vp-topswitch, html.vp-page-billing-login #vipers-root .vp-topswitch, html:not(:has(.cds--header, .opd-header-wrapper, .reg-header, .vp-billing)) #vipers-root .vp-topswitch {
   left: auto; right: 16px; top: 14px; transform: none; color: #0f2a37; background: #fff; border-color: #bcd3cf; box-shadow: 0 2px 8px rgba(15,42,55,.08); }
-@media (max-width: 700px) { #vipers-root .vp-topswitch { top: 56px; left: auto; right: 10px; transform: none; color: #0f2a37; background: #fff; border-color: #bcd3cf; }
-  #vipers-root .vp-ts-label { display: none; } #vipers-root .vp-topswitch { padding-right: 3px; } }
+#vipers-root .vp-fabs .vp-topswitch { position: static; transform: none; height: 36px; padding: 0 5px; color: #0f2a37; background: #fff; border-color: #bcd3cf; box-shadow: 0 2px 8px rgba(15,42,55,.08); }
+#vipers-root .vp-fabs .vp-ts-label { display: none; }
 /* evening mode: keep teal header bars dark teal (flip them back), and let the logo invert so its text turns light */
 html.vp-dark .reg-header, html.vp-dark .cds--header, html.vp-dark .opd-header-wrapper, html.vp-dark .section-title,
 html.vp-dark .tab-item.tab-selected > a, html.vp-dark #vipers-root .vp-ai-btn, html.vp-dark #vipers-root .vp-topswitch { filter: invert(1) hue-rotate(180deg); }

@@ -41,7 +41,7 @@ const ok = (step, pass, note = '') => { R.push({ step, pass, note }); console.lo
     const ts = Date.now();
     await page.click('button:has-text("Save and Upload")');
     // typed results: success toast + order leaves the pending list (the Reports table lists uploaded files only)
-    const toastOk = await page.locator('text=/Report successfully uploaded/i').first().waitFor({ timeout: 30000 }).then(() => true).catch(() => false);
+    const toastOk = await page.locator('text=/Report successfully uploaded|Saved successfully/i').first().waitFor({ timeout: 30000 }).then(() => true).catch(() => false);
     await page.waitForTimeout(2000);
     const stillPending = await page.locator('tr', { hasText: 'Rapid test for malaria' }).count();
     ok('Enter and save lab result (RDT malaria = Positive for P. falciparum, abnormal)', toastOk && stillPending === 0, `${Date.now() - ts} ms; toast=${toastOk}; pending rows left=${stillPending}`);

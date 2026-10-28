@@ -193,6 +193,7 @@
     root.appendChild(themeBtn);
     root.appendChild(el('div', { class: 'vp-fabs' }, [helpBtn, aiBtn]));
     paintThemeBtn(themeBtn);
+    placeThemeSwitch();
     root.appendChild(helpPanel);
     root.appendChild(aiPanel);
     document.body.appendChild(root);
@@ -529,6 +530,14 @@
     b.setAttribute('aria-label', 'Evening mode');
     b.setAttribute('title', dark ? 'Day mode' : 'Evening mode');
   }
+  // tablet and phone headers have no free room: there the switch joins the ? / AI buttons
+  function placeThemeSwitch() {
+    var b = root.querySelector('.vp-theme-btn'), fabs = root.querySelector('.vp-fabs');
+    if (!b || !fabs) return;
+    var narrow = window.innerWidth < 1100;
+    if (narrow && b.parentNode !== fabs) fabs.insertBefore(b, fabs.firstChild);
+    else if (!narrow && b.parentNode === fabs) root.insertBefore(b, fabs);
+  }
   function toggleTheme() {
     store.set('theme', store.get('theme') === 'evening' ? 'day' : 'evening');
     applyTheme();
@@ -747,7 +756,7 @@
       setTimeout(function () { pending = false; brandAll(); }, 250);
     }).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
     window.addEventListener('hashchange', onRoute);
-    setInterval(function () { onRoute(); liftAboveBottomBars(); demoLogin(); adtDiagnoses(); markSecondaryButtons(); }, 700);
+    setInterval(function () { onRoute(); placeThemeSwitch(); liftAboveBottomBars(); demoLogin(); adtDiagnoses(); markSecondaryButtons(); }, 700);
     window.addEventListener('resize', liftAboveBottomBars); // SPA routes that don't fire hashchange
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePanels(); });
   }

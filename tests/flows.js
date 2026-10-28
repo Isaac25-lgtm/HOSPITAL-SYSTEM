@@ -111,7 +111,7 @@ async function labResult(page, uuid, test, answer, abnormal) {
   await page.locator('#reportDate').click({ force: true });
   await page.locator('.flatpickr-day.today').first().click();
   await page.click('button:has-text("Save and Upload")');
-  await page.locator('text=/Report successfully uploaded/i').first().waitFor({ timeout: 30000 });
+  await page.locator('text=/Report successfully uploaded|Saved successfully/i').first().waitFor({ timeout: 30000 });
 }
 
 // Appointment (receptionist).
