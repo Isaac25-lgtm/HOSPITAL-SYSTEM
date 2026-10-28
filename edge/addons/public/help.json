@@ -285,8 +285,7 @@
         "To admit: open All (or To Admit), search the patient by name or ID and open them.",
         "Choose Patient Movement > Admit Patient, add a short note and click Admit (confirm starting the IPD visit).",
         "Expand a ward, click a free (green) bed and click Assign.",
-        "Admitted lists everyone on the wards. Open a patient to Transfer them to another ward or bed, or to Discharge them.",
-        "Change to Care View shows the wards as a nursing board."
+        "Admitted lists everyone on the wards. Open a patient to Transfer them to another ward or bed, or to Discharge them."
       ],
       "examples": [
         "How do I admit a patient?",

@@ -23,6 +23,8 @@ if [ -n "$stopped" ]; then echo "starting stopped services: $stopped"; vipers up
 # running but failing its health check (hung): restart it
 for c in $(docker ps --filter label=com.docker.compose.project=bahmni-lite --filter health=unhealthy --format '{{.Names}}'); do echo "restarting unhealthy container: $c"; docker restart "$c" >/dev/null; done
 
+# production servers keep only the container self-heal as well
+if [ "$(cat /opt/vipers/profile 2>/dev/null)" = production ]; then echo "production server: self-heal only"; exit 0; fi
 # hospital trial servers (tenant-firstboot.sh) keep only the container self-heal: no demo accounts, no DNS switch
 if [ -f /opt/vipers/tenant/is-tenant ]; then echo "hospital trial server: self-heal only"; exit 0; fi
 

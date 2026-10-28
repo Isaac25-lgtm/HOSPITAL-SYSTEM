@@ -78,3 +78,34 @@ for file in (ROOT/'scripts').glob('*.sh'):
     r = subprocess.run([BASH, '-n'], input=file.read_text().replace('\r',''), text=True, capture_output=True)
     assert r.returncode == 0, (file.name, r.stderr)
 print('PASS | all shell files parse')
+
+# F09: a missing edge.env (fresh install) or a file without the key falls back to "false" instead of aborting
+edge = (ROOT/'scripts/03-edge.sh').read_text().replace('\r', '')
+lines = [l for l in edge.splitlines() if l.startswith(('FREE_TEXT=', '[ "$FREE_TEXT" = true ]', 'KEEP='))]
+assert len(lines) == 3, lines
+with tempfile.TemporaryDirectory(prefix='vipers-edge-') as tmp:
+    env = Path(tmp)/'edge.env'
+    code = 'set -euo pipefail; ' + '; '.join(l.replace('/opt/vipers/edge/edge.env', '"$1"') for l in lines) + '; echo "FT=$FREE_TEXT KEEP=$KEEP"'
+    r = bash(code, env)                                           # file missing
+    assert r.returncode == 0 and 'FT=false' in r.stdout, (r.stdout, r.stderr)
+    env.write_text('DEMO_HOSTS=x\n', newline='\n')                  # file without the key
+    r = bash(code, env); assert r.returncode == 0 and 'FT=false' in r.stdout, r.stderr
+    env.write_text('AI_ALLOW_FREE_TEXT=true\nTRIAL_IMAGE=img-v2\n', newline='\n')   # existing choice and portal settings kept
+    r = bash(code, env); assert 'FT=true' in r.stdout and 'TRIAL_IMAGE=img-v2' in r.stdout, r.stdout
+print('PASS | edge.env regeneration: missing file/key -> free text off; existing choice and TRIAL_* settings preserved')
+
+# F12: dated (default-named) backup pointers expire after 14 days; named pointers such as baseline are kept
+backup = (ROOT/'scripts/backup.sh').read_text().replace('\r', '')
+prune = next(l for l in backup.splitlines() if l.startswith('find $B -maxdepth 1 -type l'))
+with tempfile.TemporaryDirectory(prefix='vipers-ret-') as tmp:
+    b = Path(tmp)
+    r = bash('cd "$1" && mkdir -p .versions/g1 .versions/g2 && ln -s .versions/g1 20261001-0100.current && ln -s .versions/g2 baseline.current'
+             ' && touch -h -d "20 days ago" 20261001-0100.current baseline.current && B="$1" && ' + prune + ' && ls -A', b)
+    assert r.returncode == 0, r.stderr
+    assert '20261001-0100.current' not in r.stdout and 'baseline.current' in r.stdout, r.stdout
+print('PASS | dated backup pointers expire after 14 days; named backups (baseline) are kept')
+
+# F02: setup completion is committed to disk before readiness is published
+fb = (ROOT/'scripts/tenant-firstboot.sh').read_text()
+assert fb.index('touch $T/configured') < fb.index('install -m 644 $T/site.json $P') and 'sync\ninstall -m 644 $T/site.json $P' in fb.replace('\r', '')
+print('PASS | first boot commits completion (configured + sync) before publishing readiness')

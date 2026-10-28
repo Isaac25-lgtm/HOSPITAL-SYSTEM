@@ -23,6 +23,12 @@ fi
 if [ "$(M "select code from currencies where id=13")" != "UGX" ] &&    [ "$(M "select (select count(*) from invoices) + (select count(*) from payments) + (select count(*) from estimates)")" != "0" ]; then
   echo "REFUSED: currency swap skipped - this billing database already has invoices, payments or estimates"
 elif [ "$(M "select code from currencies where id=13")" != "UGX" ]; then
+  # no billing writes during the swap: stop the app and sync, re-check the ledger is still empty, then swap
+  (cd /opt/vipers/bahmni-docker/bahmni-lite && vipers dc stop crater-php crater-atomfeed >/dev/null 2>&1)
+  if [ "$(M "select (select count(*) from invoices) + (select count(*) from payments) + (select count(*) from estimates)")" != "0" ]; then
+    (cd /opt/vipers/bahmni-docker/bahmni-lite && vipers dc start crater-php crater-atomfeed >/dev/null 2>&1)
+    echo "REFUSED: ledger changed during the swap preflight"; exit 1
+  fi
   OLD=$(M "select id from currencies where code='UGX'")
   docker exec -i -e MYSQL_PWD="$CRATER_DB_PASSWORD" bahmni-lite-craterdb-1 mysql -ucrater crater <<SQL 2>&1 | grep -v Warning
 START TRANSACTION;
@@ -37,6 +43,8 @@ UPDATE customers SET currency_id=13 WHERE currency_id=$OLD;
 UPDATE company_settings SET value='13' WHERE \`option\`='currency' AND value='$OLD';
 COMMIT;
 SQL
+  (cd /opt/vipers/bahmni-docker/bahmni-lite && vipers dc start crater-php crater-atomfeed >/dev/null 2>&1)
+  [ "$(M "select code from currencies where id=13")" = "UGX" ] || { echo "currency swap did not apply"; exit 1; }
   echo "currency rows swapped: id 13 is now UGX"
 fi
 UGX=$(M "select id from currencies where code='UGX'")

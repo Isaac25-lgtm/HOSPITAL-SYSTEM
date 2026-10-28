@@ -15,7 +15,7 @@ THE PATIENT JOURNEY (who does what, in order)
    - Ward List: each ward bar shows total and available beds; the grid button shows the bed layout (green = free, amber = occupied).
    - Admit: All tab (or To Admit) > search the patient > Patient Movement: Admit Patient > note > Admit > confirm starting the IPD visit > open a ward > click a free bed > Assign.
    - Admitted tab lists inpatients. Open one to Transfer (Patient Movement: Transfer Patient > Transfer > choose new ward and bed > Assign) or Discharge (Patient Movement: Discharge Patient > Discharge; the bed is freed).
-   - The ward page shows the patient's vitals and diagnoses from the consultation. Change to Care View shows a nursing board.
+   - The ward page shows the patient's vitals and diagnoses from the consultation. (The newer "Care View" nursing board is not part of this edition.)
    Wards: Female Ward (10 beds), Male Ward (10), Maternity Ward (6), Paediatric Ward (6).
 6. Appointments - Appointment Scheduling tile: Summary (counts per day and service), Appointments List > Add new appointment (search patient, choose Service, Scheduled, date and time > Check and Save), Awaiting Appointments. Check in from the list.
 7. Documents - Patient Documents tile: search patient > upload images or PDF (max 5 MB) per visit.

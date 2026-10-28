@@ -1,4 +1,5 @@
-FROM node:22-alpine
+# Pinned base image (digest) so a rebuild produces the same runtime; upgrade deliberately and rerun the tests.
+FROM node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914
 WORKDIR /app
 COPY server.js help.js trial.js ./
 COPY public ./public

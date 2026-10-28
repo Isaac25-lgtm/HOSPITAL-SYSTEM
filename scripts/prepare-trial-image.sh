@@ -21,8 +21,9 @@ Before=docker.service
 Type=oneshot
 ExecStart=/bin/bash /opt/vipers/scripts/trial-firewall.sh block
 # prove the quarantine exists (an empty or broken script must fail the seal, so Docker cannot start)
-ExecStartPost=/bin/sh -c 'iptables -w -S VIPERS-BOOT | grep -q "udp.*DROP" && iptables -w -S INPUT | grep -q VIPERS-BOOT && iptables -w -S FORWARD | grep -q VIPERS-BOOT && iptables -w -S DOCKER-USER | grep -q VIPERS-BOOT'
-ExecStartPost=/bin/sh -c 'ip6tables -w -S VIPERS-BOOT | grep -q "udp.*DROP" && ip6tables -w -S INPUT | grep -q VIPERS-BOOT && ip6tables -w -S DOCKER-USER | grep -q VIPERS-BOOT'
+# (exact rules: TCP and UDP drops on 80,443 and ingress-interface hooks in INPUT, FORWARD and DOCKER-USER, IPv4 and IPv6;
+#  "$$" is systemd's escape for a literal "$")
+ExecStartPost=/bin/sh -c 'IF=$$(ip -4 route show default | awk "NR==1{print \$$5}"); [ -n "$$IF" ] || exit 1; for t in iptables ip6tables; do for p in tcp udp; do $$t -w -C VIPERS-BOOT -p $$p -m multiport --dports 80,443 -j DROP || exit 1; done; for c in INPUT FORWARD DOCKER-USER; do $$t -w -C $$c -i $$IF -j VIPERS-BOOT || exit 1; done; done'
 RemainAfterExit=yes
 [Install]
 WantedBy=multi-user.target

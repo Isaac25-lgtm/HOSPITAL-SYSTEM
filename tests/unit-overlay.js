@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('fs'), vm = require('vm'), path = require('path'), assert = require('assert/strict');
 const source = fs.readFileSync(path.join(__dirname, '../edge/addons/public/vipers.js'), 'utf8');
-const c = { BRAND: 'VIPERS HOSPITAL', NodeFilter: { SHOW_TEXT: 4, FILTER_REJECT: 2, FILTER_ACCEPT: 1 }, document: { title: 'Bahmni' } };
+const c = { BRAND: 'VIPERS HOSPITAL', NodeFilter: { SHOW_TEXT: 4, FILTER_REJECT: 2, FILTER_ACCEPT: 1 }, document: { title: 'Bahmni' }, location: { pathname: '/bahmni/clinical/' } };
 let node;
 c.document.createTreeWalker = (_, type, filter) => { let done = false; return { nextNode() { if (done) return null; done = true; return filter.acceptNode(node) === 1 ? node : null; } }; };
 vm.createContext(c);
@@ -13,6 +13,17 @@ for (const text of ['Mary Crater', 'Clinical note: Report successfully uploaded 
 node = { nodeValue: 'Bahmni Help', parentNode: { nodeName: 'BUTTON', closest: sel => sel.includes('header,') ? {} : null } };
 c.brandNode({}); assert.equal(node.nodeValue, 'VIPERS HOSPITAL Help');
 console.log('PASS | clinical phrases and names unchanged; interface branding still works');
+
+// The appointments sentence is fixed only on the Appointments app, only when it is a cell's entire content and never
+// inside another clinical container (patient, diagnosis, note, dashboard section...).
+const SENT = 'This week, no appointments are available for any of the Providers';
+const cellNode = (inOtherClinical) => ({ nodeValue: SENT, parentNode: { nodeName: 'TD', closest: sel => sel === 'td' ? { textContent: SENT } :
+  sel.startsWith('td,') ? {} : (inOtherClinical ? {} : null) } });
+c.location.pathname = '/bahmni/clinical/'; node = cellNode(false); c.brandNode({}); assert.equal(node.nodeValue, SENT);
+c.location.pathname = '/appointments/'; node = cellNode(true); c.brandNode({}); assert.equal(node.nodeValue, SENT);
+c.location.pathname = '/appointments/'; node = cellNode(false); c.brandNode({}); assert.notEqual(node.nodeValue, SENT);
+c.location.pathname = '/bahmni/clinical/';
+console.log('PASS | appointments sentence fixed only on the Appointments app and outside other clinical containers');
 
 const attrs = {}, element = { children: [], isConnected: true, textContent: 'No diagnosis for this patient', getAttribute: k => attrs[k], setAttribute(k, v) { attrs[k] = v; }, removeAttribute(k) { delete attrs[k]; }, hasAttribute: k => k in attrs, appendChild(e) { this.children.push(e); } };
 const id = '11111111-1111-1111-1111-111111111111';

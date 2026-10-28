@@ -57,13 +57,13 @@ ward "Paediatric Ward" PW 2 3
 # ---- ADT app configuration + Home tiles (config overlay = survives restarts; volume = live now) ----
 V=/var/lib/docker/volumes/bahmni-lite_bahmni-config/_data/openmrs
 O=/opt/vipers/branding/config-overlay/openmrs
-SRC=/opt/vipers/branding/adt-src   # Bahmni default-config files, fetched once
-if [ ! -s $SRC/app.json ] || [ ! -s $SRC/locale_en.json ]; then
-  mkdir -p $SRC
-  for f in apps/adt/app.json apps/adt/extension.json i18n/adt/locale_en.json; do
-    curl -fsSL "https://raw.githubusercontent.com/Bahmni/default-config/master/openmrs/$f" -o "$SRC/$(basename $f)" || echo "fetch failed: $f"
-  done
-fi
+SRC=/opt/vipers/branding/adt-src   # reviewed ADT configuration (the kit's copy; never a moving upstream branch)
+KIT_OV="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)/config-overlay/openmrs"
+mkdir -p $SRC
+for f in apps/adt/app.json apps/adt/extension.json i18n/adt/locale_en.json; do
+  if [ -s "$KIT_OV/$f" ]; then install -m 644 "$KIT_OV/$f" "$SRC/$(basename $f)"; fi
+done
+for f in app.json extension.json locale_en.json; do [ -s "$SRC/$f" ] || { echo "ADT configuration $f missing (expected in the kit's config-overlay)"; exit 1; }; done
 mkdir -p $O/apps/adt
 # vitals: the 2.0 Vitals form records individual concepts (no "Vitals" set); admission closes the OPD visit,
 # so show the previous visit too (otherwise the doctor's vitals and diagnosis look missing on the ward)

@@ -45,6 +45,14 @@ ln -s ".versions/$(basename "$W")" "$LINK"
 mv -Tf "$LINK" "$D"
 sync -f "$B"
 find $B -maxdepth 1 -type d -regextype posix-extended -regex '.*/[0-9]{8}-[0-9]{4}' -mtime +14 -exec rm -rf {} +
+# dated (default-named) pointers expire after 14 days too; named ones (baseline, nightly-*, final) are kept
+find $B -maxdepth 1 -type l -regextype posix-extended -regex '.*/[0-9]{8}-[0-9]{4}\.current' -mtime +14 -delete
+# optional off-site copy (set BACKUP_BUCKET=gs://... in /opt/vipers/secrets/backup.env; needs storage permission)
+BACKUP_BUCKET=$( (grep -s '^BACKUP_BUCKET=gs://' /opt/vipers/secrets/backup.env || true) | tail -1 | cut -d= -f2-)
+if [ -n "$BACKUP_BUCKET" ]; then
+  gcloud storage cp -r "$W" "$BACKUP_BUCKET/$(hostname)/" >/dev/null && echo "off-site copy: $BACKUP_BUCKET/$(hostname)/$(basename "$W")" \
+    || { echo "OFF-SITE COPY FAILED (local backup is complete)"; exit 2; }
+fi
 # Prune old immutable generations only when no current pointer references them.
 while IFS= read -r -d '' old; do
   used=0

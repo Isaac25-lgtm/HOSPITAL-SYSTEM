@@ -24,21 +24,26 @@ if [ -n "$GCP_PROJECT" ]; then AI_KEY_LINE="AI_GCP_SECRET=projects/$GCP_PROJECT/
 elif grep -q '^AI_API_KEY=.' /opt/vipers/secrets/addons.env 2>/dev/null; then AI_ON=true; fi
 AI_ON="${AI_ENABLED:-$AI_ON}"
 # free-text AI answers: off unless chosen (fictional-data demo/trials only); a regeneration keeps the current choice
-FREE_TEXT="${AI_ALLOW_FREE_TEXT:-$(grep -s '^AI_ALLOW_FREE_TEXT=' /opt/vipers/edge/edge.env | cut -d= -f2)}"
+# (a missing file or key must fall back to "false", not abort the script under set -e)
+FREE_TEXT="${AI_ALLOW_FREE_TEXT:-$( (grep -s '^AI_ALLOW_FREE_TEXT=' /opt/vipers/edge/edge.env || true) | tail -1 | cut -d= -f2)}"
+[ "$FREE_TEXT" = true ] || FREE_TEXT=false
+# portal settings added by operators (TRIAL_IMAGE, TRIAL_SA, ...) survive a regeneration of edge.env
+KEEP=$( (grep -s -E '^TRIAL_[A-Z_]+=' /opt/vipers/edge/edge.env || true) )
 cat > /opt/vipers/edge/edge.env <<EOF
 DEMO_HOSTS=$DEMO_HOSTS
 BILLING_HOSTS=$BILLING_HOSTS
 AI_ENABLED=$AI_ON
-AI_ALLOW_FREE_TEXT=${FREE_TEXT:-false}
+AI_ALLOW_FREE_TEXT=$FREE_TEXT
 AI_MODEL=${AI_MODEL:-deepseek-flash}
 AI_URL=${AI_URL:-https://api.deepseek.com/chat/completions}
 $AI_KEY_LINE
-AI_DAILY_TOKEN_LIMIT=250000
-AI_TOTAL_TOKEN_LIMIT=1500000
+AI_DAILY_TOKEN_LIMIT=${AI_DAILY_TOKEN_LIMIT:-250000}
+AI_TOTAL_TOKEN_LIMIT=${AI_TOTAL_TOKEN_LIMIT:-1500000}
 AI_MAX_OUTPUT_TOKENS=300
 GATE_ENABLED=${GATE_ENABLED:-false}
 GATE_DAYS=14
 EOF
+[ -n "$KEEP" ] && printf '%s\n' "$KEEP" >> /opt/vipers/edge/edge.env
 echo "edge hosts: $DEMO_HOSTS | $BILLING_HOSTS"
 
 # Gate secrets (tester access code + cookie signing key), generated once.
@@ -55,8 +60,12 @@ vipers dc build --quiet caddy vipers-addons
 # the add-ons service runs as uid 1000 (node); make sure its usage/ceiling file is writable
 docker volume create bahmni-lite_addons-data >/dev/null
 docker run --rm -v bahmni-lite_addons-data:/data alpine:3 chown -R 1000:1000 /data
-vipers up 2>&1 | grep -v -E 'obsolete|Running|Waiting|Healthy' || true
+# failures must stop the script (a trial must never be declared ready on a broken edge)
+if ! OUT=$(vipers up 2>&1); then echo "$OUT" | tail -20; echo "vipers up failed"; exit 1; fi
 # pick up changed bind-mounted files (Caddyfile, public assets, env)
-vipers dc up -d --force-recreate caddy vipers-addons 2>&1 | grep -E 'Started|Error' || true
+if ! OUT=$(vipers dc up -d --force-recreate caddy vipers-addons 2>&1); then echo "$OUT" | tail -20; echo "edge recreate failed"; exit 1; fi
 sleep 5
+for c in caddy vipers-addons; do
+  [ "$(docker inspect -f '{{.State.Running}}' "bahmni-lite-$c-1" 2>/dev/null)" = true ] || { echo "$c is not running"; exit 1; }
+done
 vipers ps | grep -E 'caddy|addons'

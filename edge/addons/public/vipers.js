@@ -102,9 +102,11 @@
   function stockPhrase(n) { return TEXT_FIXES.some(function (f) { return f[0].test(n.nodeValue); }); }
   // Bahmni's own message alone in a table cell (e.g. the appointments sentence) is interface text; clinical
   // free text never consists solely of one of these stock phrases, so it stays untouched everywhere else.
+  var CLINICAL_NO_TD = CLINICAL_SEL.replace(/^td, /, '');
   function wholeStockCell(n) {
+    if (!/^\/appointments\//.test(location.pathname)) return false;   // the sentence belongs to the Appointments app
     var e = n.parentNode, cell = e.closest && e.closest('td');
-    if (!cell || e.closest('textarea, [contenteditable], [class*="patient"], [class*="Patient"], [class*="diagnos"], [class*="Diagnos"], [class*="observation"], [class*="Observation"], [class*="note"], [class*="Note"]')) return false;
+    if (!cell || e.closest(CLINICAL_NO_TD)) return false;
     // only Bahmni's appointments sentence is known to sit alone in a table cell; short labels such as "InPatient"
     // could be data (a visit type) and stay protected
     var t = cell.textContent.trim(), m = t.match(/This week, no appointments are available for any of the Providers\.?/);
@@ -653,10 +655,15 @@
   // explains it and offers Try again / Go to Home (and mentions server errors seen while loading). It disappears on
   // its own when the screen finishes loading.
   var SPIN_SEL = '#overlay, .loader, .spinner, .cds--loading, .bx--loading, .cds--loading-overlay, .bx--loading-overlay, .animate-spin';
-  var SPIN_LIMIT = 25000, spinSince = 0, spinBanner = null, spinDismissed = false, failedLoads = 0, forbiddenLoads = 0;
+  var SPIN_LIMIT = 25000, spinSince = 0, spinBanner = null, spinDismissed = false, lastFailAt = 0, last401At = 0, last403At = 0;
   try {
     new PerformanceObserver(function (list) {
-      list.getEntries().forEach(function (e) { if (e.responseStatus >= 500) failedLoads++; if (e.responseStatus === 401 || e.responseStatus === 403) forbiddenLoads++; });
+      list.getEntries().forEach(function (e) {
+        var at = performance.timeOrigin + e.responseEnd;
+        if (e.responseStatus >= 500) lastFailAt = at;
+        if (e.responseStatus === 401) last401At = at;
+        if (e.responseStatus === 403) last403At = at;
+      });
     }).observe({ type: 'resource', buffered: true });
   } catch (e) { /* older browsers: no server-error hint */ }
   function spinnerVisible() {
@@ -676,13 +683,15 @@
     if (!document.body || !root) return;
     if (!spinnerVisible()) { spinSince = 0; spinDismissed = false; if (spinBanner) { spinBanner.remove(); spinBanner = null; } return; }
     if (!spinSince) spinSince = Date.now();
-    // the server refused access (some Bahmni screens then spin for ever): say so after 5 s instead of 25 s
-    if (spinBanner || spinDismissed || Date.now() - spinSince < (forbiddenLoads ? 5000 : SPIN_LIMIT)) return;
+    // only server answers that arrived while THIS spinner was up count (an older refusal must not change the message)
+    var since = spinSince - 2000, refused = last403At >= since, expired = last401At >= since, failed = lastFailAt >= since;
+    if (spinBanner || spinDismissed || Date.now() - spinSince < (refused || expired ? 5000 : SPIN_LIMIT)) return;
     var home = BILLING ? '/admin/dashboard' : '/bahmni-v2/home/';
+    var title = expired ? 'Your session may have ended.' : refused ? 'Your role does not have access to this section.' : 'This screen is taking longer than expected.';
+    var hint = expired ? ' Sign in again to continue.' : refused ? ' Go to Home to open the sections available to you, or sign in with a role that has access.'
+      : failed ? ' Part of it could not be loaded from the server.' : ' Your connection or the server may be slow.';
     spinBanner = el('div', { class: 'vp-stuck', role: 'alert' }, [
-      el('strong', { text: forbiddenLoads ? 'Your role does not have access to this section.' : 'This screen is taking longer than expected.' }),
-      el('span', { text: forbiddenLoads ? ' Go to Home to open the sections available to you, or sign in with a role that has access.'
-        : failedLoads ? ' Part of it could not be loaded from the server.' : ' Your connection or the server may be slow.' }),
+      el('strong', { text: title }), el('span', { text: hint }),
       el('div', { class: 'vp-stuck-actions' }, [
         el('button', { type: 'button', class: 'vp-stuck-retry', text: 'Try again', onclick: function () { location.reload(); } }),
         el('button', { type: 'button', text: 'Go to Home', onclick: function () { location.href = home; } }),
@@ -691,6 +700,7 @@
     ]);
     root.appendChild(spinBanner);
   }
+
 
   // VIPERS HOSPITAL is English only. Bahmni sometimes leaves the language selector blank, or fills it with junk
   // (once with the text of an HTML page): keep a single "English" option and select it.
@@ -800,7 +810,10 @@
       var u = new URL(url, location.origin);
       if (u.origin !== location.origin || !/^\/openmrs\/ws\/fhir2\/R4\/Condition(?:$|\?)/.test(u.pathname + u.search) || seen[u.href]) return Promise.reject(new Error('Invalid diagnosis pagination'));
       seen[u.href] = true;
-      return fetch(u.href, { credentials: 'same-origin', headers: { Accept: 'application/fhir+json' } }).then(function (r) {
+      // bounded: a hanging request ends as a failure (and is retried) instead of blocking retries for ever
+      var ctl = typeof AbortController !== "undefined" ? new AbortController() : null, timer = ctl && setTimeout(function () { ctl.abort(); }, 15000);
+      return fetch(u.href, { credentials: 'same-origin', headers: { Accept: 'application/fhir+json' }, signal: ctl ? ctl.signal : undefined }).then(function (r) {
+        if (timer) clearTimeout(timer);
         if (!r.ok) throw new Error('Diagnosis request failed');
         return r.json();
       }).then(function (b) {
@@ -865,7 +878,7 @@
     if (lastPage) document.documentElement.classList.remove('vp-page-' + lastPage);
     document.documentElement.classList.add('vp-page-' + id);
     lastPage = id;
-    spinSince = 0; failedLoads = 0; forbiddenLoads = 0; spinDismissed = false;   // a new screen gets its own 25 s
+    spinSince = 0; spinDismissed = false;   // a new screen gets its own 25 s
     if (url !== lastUrl) { closePanels(); lastUrl = url; } // keep panels open for in-page changes (e.g. Vitals form)
     else if (!helpPanel.hasAttribute('hidden')) renderHelp();
     loadRole();

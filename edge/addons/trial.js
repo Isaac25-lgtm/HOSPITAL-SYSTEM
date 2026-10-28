@@ -16,8 +16,14 @@ const TRIAL_DAYS = +env('TRIAL_DAYS', 5);
 const TRIAL_IMAGE = env('TRIAL_IMAGE', 'vipers-hospital-golden');
 const TRIAL_MACHINE = env('TRIAL_MACHINE', 'e2-standard-4');
 const TRIAL_DISK_GB = env('TRIAL_DISK_GB', '80');
-// optional low-privilege identity for trial servers (default: this VM's own service account)
+// low-privilege identity for trial servers. Without it a trial would run as this controller's identity, so that is
+// refused unless the operator explicitly accepts it (TRIAL_ALLOW_CONTROLLER_SA=true) until a separate account exists.
 const TRIAL_SA = env('TRIAL_SA', '');
+const ALLOW_CONTROLLER_SA = env('TRIAL_ALLOW_CONTROLLER_SA', 'false') === 'true';
+// durable admission limit: at most this many new trial spaces per 24 hours (counted from the registry, survives restarts)
+const TRIAL_DAILY_MAX = +env('TRIAL_DAILY_MAX', 6);
+// AI allowance per trial server (the AI provider account is shared with the main server)
+const TRIAL_AI_DAILY = env('TRIAL_AI_DAILY_TOKEN_LIMIT', '50000'), TRIAL_AI_TOTAL = env('TRIAL_AI_TOTAL_TOKEN_LIMIT', '250000');
 // optional ISO date after which this controller will not be running: no trial may outlive it
 const CONTROLLER_UNTIL = env('TRIAL_CONTROLLER_UNTIL', '');
 // first-boot scripts sent to each new server in its metadata, so servers made from an older image still get the
@@ -141,7 +147,13 @@ async function signup(body) {
     console.error('trial admission unavailable:', e.message);
     return { status: 503, body: { error: 'Trial setup is temporarily unavailable. Please try again later.' } };
   }
+  if (!TRIAL_SA && !ALLOW_CONTROLLER_SA) {
+    console.error('trial admission refused: no TRIAL_SA (separate low-privilege identity) configured');
+    return { status: 503, body: { error: 'Trial setup is temporarily unavailable. Please try again later.' } };
+  }
   const now = Date.now(), expires = new Date(now + TRIAL_DAYS * 86400e3).toISOString();
+  if (trials.filter(t => now - Date.parse(t.created) < 86400e3).length >= TRIAL_DAILY_MAX)
+    return { status: 503, body: { error: 'The daily limit of new trial spaces has been reached. Please try again tomorrow.' } };
   if (CONTROLLER_UNTIL && Date.parse(expires) > Date.parse(CONTROLLER_UNTIL))
     return { status: 503, body: { error: 'New trial spaces are paused at the moment. Please contact Motion Imprints Technologies.' } };
   // checks and reservation happen together, before any await, so simultaneous requests cannot all pass
@@ -166,6 +178,7 @@ async function signup(body) {
       { key: 'vipers-password', value: v.password }, { key: 'vipers-expires', value: expires },
       { key: 'vipers-billing-email', value: t.billingEmail }, { key: 'vipers-controller', value: CONTROLLER_URL },
       { key: 'vipers-ai-free-text', value: env('AI_ALLOW_FREE_TEXT', 'false') === 'true' ? 'true' : 'false' },
+      { key: 'vipers-ai-daily-limit', value: TRIAL_AI_DAILY }, { key: 'vipers-ai-total-limit', value: TRIAL_AI_TOTAL },
       { key: 'vipers-trial-id', value: id }, { key: 'vipers-delete-token', value: deleteToken },
       { key: 'vipers-delete-hash', value: t.deleteHash },
       // current add-on code, so servers made from an older image run the same portal/AI/self-delete logic
@@ -193,7 +206,7 @@ async function signup(body) {
     save();
     return { status: 500, body: { error: 'Could not create the trial space right now. Please try again later.' } };
   }
-  console.log(`trial created ${t.vm} for "${v.hospital}" (${v.username}), expires ${expires}`);
+  console.log(`trial created ${t.vm}, expires ${expires}`);   // no hospital or user names in logs
   return { status: 200, body: { id, expires } };
 }
 
@@ -217,6 +230,9 @@ async function scrubPassword(t, inst) {
 
 async function refresh(t) {
   if (!['creating', 'ready'].includes(t.status) || !t.zone) return t;
+  const gen = t.gen || 0;
+  // a deletion that started while this refresh was waiting on the cloud wins: never write over it
+  const superseded = () => (t.gen || 0) !== gen || !['creating', 'ready'].includes(t.status);
   // Old registry versions could publish ready before scrubbing; fail closed on upgrade.
   if (t.status === 'ready' && !t.scrubbed) t.status = 'creating';
   try {
@@ -235,10 +251,12 @@ async function refresh(t) {
       if (site && site.mode === 'hospital') hospitalReady = true;
       if (site && site.mode === 'hospital-failed') { t.setupFailed = true; }
     }
+    if (superseded()) return t;
     if (hospitalReady) {
       // Recheck even a previously ready record: do not trust a cached scrub flag.
       t.scrubbed = false;
       await scrubPassword(t, inst);
+      if (superseded()) return t;
       t.status = t.scrubbed ? 'ready' : 'creating';
       if (t.scrubbed) t.ready ||= new Date().toISOString();
     }
@@ -249,6 +267,7 @@ async function refresh(t) {
 
 // delete and confirm; the record keeps its slot (status deleting) until the server is really gone
 async function remove(t, reason) {
+  t.gen = (t.gen || 0) + 1;   // any refresh still in flight for this trial is now stale
   if (!t.zone) {
     const s = await whoami();
     t.zone = s.zone;
@@ -261,7 +280,12 @@ async function remove(t, reason) {
     }
   } catch (e) { if (e.status !== 404) { t.lastError = e.message; console.error('trial delete (will retry)', t.vm, e.message); } }
   try {
-    if (!(await instance(t))) { t.status = 'deleted'; t.deleted = new Date().toISOString(); console.log(`trial deleted ${t.vm} (${t.hospital}): ${t.reason}`); }
+    if (!(await instance(t))) {
+      t.status = 'deleted'; t.deleted = new Date().toISOString();
+      // the account is gone: keep only what is needed to account for the server (id, VM name, dates, reason)
+      t.hospital = '(deleted)'; t.username = ''; t.billingEmail = ''; t.ip = ''; t.slug = ''; delete t.deleteHash;
+      console.log(`trial deleted ${t.vm}: ${t.reason}`);
+    }
   } catch (e) { t.lastError = e.message; }
   save();
 }
@@ -295,7 +319,10 @@ async function sweep() {
     for (const t of trials.filter(x => ['creating', 'ready'].includes(x.status))) await refresh(t);
     for (const t of trials.filter(x => HOLDS_SLOT.includes(x.status))) {
       if (t.status === 'deleting') await remove(t);
-      else if (Date.parse(t.expires) < Date.now()) await remove(t, 'expired');
+      else if (Date.parse(t.expires) < Date.now()) {
+        if (Date.now() - Date.parse(t.expires) > 3600e3) console.error(`ALERT trial ${t.vm} is more than an hour past its expiry and still exists`);
+        await remove(t, 'expired');
+      }
       else if (t.status === 'creating' && Date.now() - Date.parse(t.created) > READY_TIMEOUT) await remove(t, 'not ready after 40 minutes');
     }
   } finally { sweeping = false; }
@@ -386,6 +413,7 @@ async function handle(req, res, p, send, limited) {
     if (!t) return send(res, 404, { error: 'unknown' }), true;
     await refresh(t);
     const status = t.status === 'deleting' || t.status === 'deleted' ? 'deleted' : t.status;
+    if (status === 'deleted') return send(res, 200, { status }), true;
     return send(res, 200, { status, hospital: t.hospital, expires: t.expires, url: t.status === 'ready' ? urlFor(t) : null }), true;
   }
   if (p === '/vipers-trial/api/delete' && req.method === 'POST') {
@@ -406,4 +434,4 @@ async function handle(req, res, p, send, limited) {
   return false;
 }
 
-module.exports = { handle, TRIAL_MAX, TRIAL_DAYS, _test: { signup, sweep, refresh, deleteRequest, trials: () => trials } };
+module.exports = { handle, TRIAL_MAX, TRIAL_DAYS, _test: { signup, sweep, refresh, remove, deleteRequest, trials: () => trials } };

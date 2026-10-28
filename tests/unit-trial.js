@@ -42,6 +42,8 @@ global.fetch = async (url, opts = {}) => {
 
 process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'trial-'));
 process.env.TENANT_SCRIPTS = path.join(APP, 'no-such-dir');
+process.env.TRIAL_ALLOW_CONTROLLER_SA = 'true';   // admission rules for the identity are covered in unit-trial-admission.js
+process.env.TRIAL_DAILY_MAX = '100';
 const trial = require(path.join(APP, 'trial.js'));
 const T = trial._test;
 const body = (u, h = 'Test Hospital') => ({ hospital: h, username: u, password: 'password123' });
@@ -134,6 +136,17 @@ const body = (u, h = 'Test Hospital') => ({ hospital: h, username: u, password: 
   const readyAdopted = T.trials().find(t => t.vm === adoptedLive.name);
   ok('post-scrub recovered trial accepts its original self-delete token', T.deleteRequest({ id: readyAdopted.id, token: originalToken }).status === 202);
   await new Promise(r => setTimeout(r, 100));
+  // F07: a readiness refresh that is still waiting on the cloud must not overwrite a deletion
+  cloud.ready = true; cloud.scrubStatus = 200;
+  cloud.instances.set('race-vm', { name: 'race-vm', labels: { 'vipers-trial': '1' }, metadata: { fingerprint: 'f', items: [] }, networkInterfaces: [{ accessConfigs: [{ natIP: '10.9.9.9' }] }] });
+  const rt = { id: 'race1', vm: 'race-vm', zone: 'z1', status: 'creating', created: new Date().toISOString(), expires: new Date(Date.now() + 86400e3).toISOString(),
+    hospital: 'Race Hospital', username: 'raceuser', billingEmail: 'raceuser@vipers.trial' };
+  T.trials().push(rt);
+  const inflight = T.refresh(rt);
+  await T.remove(rt, 'deleted by the hospital');
+  await inflight;
+  ok('a refresh in flight cannot overwrite a deletion', rt.status === 'deleted', rt.status);
+  ok('a deleted account keeps no hospital or user details', rt.hospital === '(deleted)' && !rt.username && !rt.billingEmail && !rt.deleteHash);
   cloud.instances.clear(); T.trials().splice(0); cloud.sealed = false;
   const unsealed = await T.signup(body('unsafeimage'));
   ok('unsealed image is refused before reserving or creating', unsealed.status === 503 && T.trials().length === 0 && cloud.instances.size === 0);

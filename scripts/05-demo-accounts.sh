@@ -2,6 +2,8 @@
 # Create/repair VIPERS demo roles + accounts in OpenMRS. Idempotent; also run every 15 min by
 # vipers-guard.timer so testers cannot lock others out by changing demo passwords or roles.
 source "$(dirname "$0")/00-guard.sh" 2>/dev/null || source /tmp/00-guard.sh >/dev/null
+# a server switched to production mode (scripts/production-mode.sh) never runs demo tooling
+[ "$(cat "${VIPERS_PROFILE_FILE:-/opt/vipers/profile}" 2>/dev/null)" = production ] && { echo "refusing: production server (no demo accounts, demo reset or demo expiry)"; exit 1; }
 set +e
 source /opt/vipers/secrets/vipers.env
 A="superman:$OPENMRS_OWNER_PASSWORD"; API=https://127.0.0.1:8443/openmrs/ws/rest/v1

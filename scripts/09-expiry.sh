@@ -3,6 +3,8 @@
 #   EXPIRY="2026-11-04 08:47" bash 09-expiry.sh        # install / move the timer (time is Africa/Kampala)
 #   systemctl disable --now vipers-expiry.timer         # cancel (extend the demo)
 source "$(dirname "$0")/00-guard.sh" 2>/dev/null || source /tmp/00-guard.sh
+# a server switched to production mode (scripts/production-mode.sh) never runs demo tooling
+[ "$(cat "${VIPERS_PROFILE_FILE:-/opt/vipers/profile}" 2>/dev/null)" = production ] && { echo "refusing: production server (no demo accounts, demo reset or demo expiry)"; exit 1; }
 set -e
 EXPIRY="${EXPIRY:?set EXPIRY=\"YYYY-MM-DD HH:MM\" (Africa/Kampala)}"
 cat > /etc/systemd/system/vipers-expiry.service <<'EOF'

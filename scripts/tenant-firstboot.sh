@@ -65,6 +65,9 @@ if [ -f $T/configured ]; then
     PUBLIC_IP=$IP DOMAIN=invalid.local bash $S/03-edge.sh
     echo "$IP" > $T/ip
   fi
+  # a crash between committing and publishing: publish the committed state now
+  [ -s $T/site.json ] && ! cmp -s $T/site.json "$P" && install -m 644 $T/site.json "$P"
+  rm -f $T/setup-running "$T/rotation.env"
   unblock
   echo "already configured"; exit 0
 fi
@@ -196,16 +199,26 @@ sed -i '/^TRIAL_\(ID\|DELETE_TOKEN\|CONTROLLER\)=/d' $AE
 
 # all checks passed: open the web ports and serve this server's own hostnames (certificate issued now)
 unblock
-AI_ALLOW_FREE_TEXT="$(md attributes/vipers-ai-free-text || echo false)" PUBLIC_IP=$IP DOMAIN=invalid.local bash $S/03-edge.sh || { block; fail "03-edge"; }
+AI_ALLOW_FREE_TEXT="$(md attributes/vipers-ai-free-text || echo false)" \
+AI_DAILY_TOKEN_LIMIT="$(md attributes/vipers-ai-daily-limit || echo 50000)" AI_TOTAL_TOKEN_LIMIT="$(md attributes/vipers-ai-total-limit || echo 250000)" \
+  PUBLIC_IP=$IP DOMAIN=invalid.local bash $S/03-edge.sh || { block; fail "03-edge"; }
 H="demo.$(echo "$IP" | tr . -).sslip.io"
-for i in $(seq 1 30); do curl -s -o /dev/null -m 10 "https://$H/vipers-assets/favicon.svg" && break; sleep 10; done
+# this server must really serve HTTPS with a valid certificate before it is declared ready
+served=0
+for i in $(seq 1 30); do
+  if curl -sf -o /dev/null -m 10 "https://$H/vipers-assets/favicon.svg"; then served=1; break; fi
+  sleep 10
+done
+[ "$served" = 1 ] || { block; fail "edge does not serve HTTPS"; }
 
 # hospital mode for the web layer (sign-in notice, no role cards); the portal reads this to mark the server ready
+# Completion is committed to disk BEFORE readiness is published: the portal removes the bootstrap password as soon
+# as it sees mode "hospital", so a crash after publication must never need that password again.
 jq -nc --arg h "$HOSP" --arg u "$USERN" --arg b "$BEMAIL" --arg e "$EXP" \
-  '{mode:"hospital", hospital:$h, username:$u, billingEmail:$b, expires:$e}' > $P
-chmod 644 $P
+  '{mode:"hospital", hospital:$h, username:$u, billingEmail:$b, expires:$e}' > $T/site.json
 echo "$IP" > $T/ip
-rm -f $T/setup-running
 touch $T/configured
-rm -f "$J"
+sync
+install -m 644 $T/site.json $P
+rm -f $T/setup-running "$J"
 echo "configured for $HOSP ($USERN) at $IP"

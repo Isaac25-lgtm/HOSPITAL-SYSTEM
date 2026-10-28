@@ -11,8 +11,13 @@ or earlier if the hospital deletes it itself. At most **3** trial servers exist 
 1. `https://demo.<main-host>/` redirects to `/vipers-trial/` (portal page from `edge/addons/trial.js`).
 2. **Open an account** → `POST /vipers-trial/api/signup`
    - validation (hospital 3-60 chars, username `^[a-z][a-z0-9._-]{2,29}$` not `demo.*`/reserved, password ≥ 8 incl. a letter, ≠ username);
-   - username and slot are **reserved before any network call**, so simultaneous requests cannot exceed the cap or reuse
-     a username; the registry is saved atomically and a failed save refuses the sign-up; 5 sign-ups per IP per hour;
+   - admission first reconciles with the cloud (shared by simultaneous requests) and refuses unsealed images; the username
+     and slot are then **reserved synchronously** (no await between check and reservation), so simultaneous requests cannot
+     exceed the cap or reuse a username; the registry is saved atomically and a failed save refuses the sign-up;
+     5 sign-ups per IP per hour and at most `TRIAL_DAILY_MAX` (default 6) new spaces per 24 hours, counted from the registry;
+   - trial servers need a separate low-privilege identity (`TRIAL_SA`); running them as the controller's own identity is
+     refused unless `TRIAL_ALLOW_CONTROLLER_SA=true` is set explicitly (the current demo does this until the IAM change is
+     approved);
    - Compute Engine `instances.insert` (metadata-server token): image `vipers-hospital-golden`, `e2-standard-4`, 80 GB
      **pd-standard**, labels `vipers-trial=1`, `vipers-trial-id`, `vipers-expires`. Instance metadata carries the hospital
      details, the password and a per-server **delete token** (both removed once the server is ready), the current

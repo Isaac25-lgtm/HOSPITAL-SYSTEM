@@ -1,6 +1,6 @@
 # Confirmed audit defects — implementation and rollout
 
-These changes address the confirmed demo/trial code defects. They have **not been deployed or proven on a fresh cloud hospital**. The historical production-readiness report remains a snapshot, not a claim that the new source is production approved. Claude's pre-existing spinner changes in vipers.js/vipers.css and spinner tests were preserved.
+These changes address the confirmed demo/trial code defects. They were deployed on 28 Oct 2026 and verified on real boots (see the rollout record and the final-sweep section below). The historical production-readiness report remains a snapshot, not a claim that the new source is production approved. Claude's pre-existing spinner changes in vipers.js/vipers.css and spinner tests were preserved.
 
 ## Implemented
 
@@ -20,7 +20,7 @@ These changes address the confirmed demo/trial code defects. They have **not bee
 2. Reboot/probe the builder externally throughout boot: TCP 80/443 and QUIC/UDP443 must remain unreachable while Docker starts. Verify a broken quarantine service prevents Docker startup. Inspect effective IPv4/IPv6 and cloud firewall rules, route interfaces, and systemd ordering.
 3. Stop the builder and capture a fresh golden image. Only after those checks, label that image `vipers-boot-sealed=v1` and configure TRIAL_IMAGE. The provisioner now needs read access to that image and refuses the old unlabelled image. This deliberate refusal closes the unsafe old-image provisioning path.
 4. Deploy add-on code and all helper scripts together. Do not ship only tenant-firstboot.sh: it requires trial-firewall.sh/auth-check.sh in the sealed image. Deploy backup-verify.sh with backup/reset scripts. Regenerate the baseline and verify the new complete backup before any restore.
-5. Keep free-text AI opt-in unset/false. Restart the add-on service to discard prior cache/config. If explicitly enabled for fictional trials, provider filters still do not guarantee privacy.
+5. Keep free-text AI opt-in unset/false for any real-data install. (The owner chose to enable it on the fictional-data demo and trials; that choice is set explicitly in edge.env and trial metadata.) Restart the add-on service to discard prior cache/config. If explicitly enabled for fictional trials, provider filters still do not guarantee privacy.
 6. Create a fresh fictional hospital and inject failures at each setup stage; verify quarantine, no public/default authentication, billing revocation, effective password policy and safe resume after reboot. Deny metadata scrubbing and require no ready URL. Test controller restart/registry loss, capacity, self-delete and cloud-confirmed VM/disk disappearance. Refresh existing trial code or recreate fictional trials before treating them as covered.
 
 No cloud IAM changes, production mode, off-host backup service, independent disk cleanup, provider-wide budgeting, pinned platform migration or admission-verification design is claimed here. These remain the separate design/production items identified by the user.
@@ -68,3 +68,27 @@ The main server's portal uses it (`TRIAL_IMAGE=vipers-hospital-golden-v2`).
 
 Also on the main server: the existing manifest-less `baseline` backup is refused by the new restore; a new baseline must be
 taken (`backup.sh baseline`) before `reset-demo.sh` can be used.
+
+## Final sweep (Codex, ccabb65): fixes
+
+| Finding | Fix |
+|---|---|
+| F02 completion crash window | `tenant-firstboot.sh` commits `configured`, the IP and a copy of `site.json` to disk (sync) **before** publishing readiness; a later boot republishes the committed state and never needs the scrubbed bootstrap password. |
+| F03 failed edge became "ready" | `03-edge.sh` stops on any `vipers up` / recreate failure and checks Caddy and the add-on service are running; first boot requires a valid-certificate HTTPS answer (`curl -f`) before readiness, otherwise it stays quarantined and failed. |
+| F07 refresh overwrote deletion | Each deletion bumps a generation counter; a refresh that started earlier never writes status afterwards. |
+| F08 narrow seal postconditions | The seal unit checks the exact TCP and UDP drop rules on 80,443 and the ingress-interface hooks in INPUT, FORWARD and DOCKER-USER, for IPv4 and IPv6. |
+| F09 fresh-install abort | Missing `edge.env` or key falls back to `false`; operator `TRIAL_*` settings now survive a regeneration of `edge.env` (previously `TRIAL_IMAGE` would have been dropped). |
+| F10 broad table-cell exception | Only on the Appointments app, and never inside any other clinical container. |
+| F11 hanging diagnosis request | 15-second timeout per page; a timeout is a failure and is retried. |
+| F12 dated backups never expired | Default-named (timestamp) pointers expire after 14 days; named backups are kept. |
+| F14 stale "no access" message | Only 401/403 answers that arrive while the current spinner is up count; 401 says the session may have ended, 403 says the role has no access. |
+| F15 documentation | Corrected AUDIT-FIXES status, TRIAL-PORTAL admission order, removed "Care View" from help and the AI guide, clarified the free-text choice. |
+| C01/F01 production boundary | `scripts/production-mode.sh`: one-way, verified switch (retire and prove demo accounts dead, production password policy, stale-visit task restarted, billing demo user locked and tokens revoked, free-text AI and trial portal off, role cards hidden). Demo scripts (`05-demo-accounts`, `reset-demo`, `09-expiry`) refuse to run on a production server; the guard keeps self-heal only. |
+| F04/H03 trial identity | Provisioning refuses to run trials as the controller identity unless `TRIAL_ALLOW_CONTROLLER_SA=true` is set explicitly; set `TRIAL_SA` once the low-privilege account exists (needs the owner's IAM approval). |
+| M10 admission | Durable daily cap `TRIAL_DAILY_MAX` (default 6) counted from the registry. |
+| M11 retention | Deleted trials keep only id, VM name, dates and reason; logs no longer contain hospital or user names; status of a deleted space returns only "deleted". |
+| M08 AI budget | Each trial server gets its own AI allowance (`TRIAL_AI_DAILY_TOKEN_LIMIT` 50 000 / `TRIAL_AI_TOTAL_TOKEN_LIMIT` 250 000 by default). Set a provider-side spending cap as well. |
+| M07 currency migration | Billing app and sync are stopped during the swap, the empty ledger is re-checked, the swap runs in a transaction and is verified. |
+| M09 reproducible builds | Caddy pinned to 2.11.7 and the replace-response plugin to a fixed commit; the add-on image pinned by digest; In-Patient configuration taken from the kit, never from upstream `master`. |
+| F13 deletion monitoring | Sweep logs an ALERT when a trial is more than an hour past expiry and still exists. Independent deletion without the controller needs the IAM change. |
+| F06/H08 off-host backups | Optional off-site copy: set `BACKUP_BUCKET=gs://...` in `/opt/vipers/secrets/backup.env` (needs a bucket and storage permission, i.e. the owner's approval). |
