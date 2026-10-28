@@ -66,7 +66,8 @@ if ($u) { $u->password = bin2hex(random_bytes(16)); $u->save(); }
 Illuminate\Support\Facades\DB::table("personal_access_tokens")->delete();
 Illuminate\Support\Facades\DB::table("sessions")->delete();
 if ($u && Illuminate\Support\Facades\Hash::check("everton", Crater\Models\User::find($u->id)->password)) { fwrite(STDERR, "demo cashier still works\n"); exit(1); }
-echo "billing: demo cashier locked, tokens and sessions revoked\n";' 2> >(grep -v -i deprecat >&2)
+echo "billing: demo cashier locked, tokens and sessions revoked\n";' 2>/tmp/vipers-prod-crater.err || { grep -v -i deprecat /tmp/vipers-prod-crater.err >&2 || true; echo "billing step failed"; exit 1; }
+rm -f /tmp/vipers-prod-crater.err
 
 # 6. web layer: no free-text AI, no trial portal, no role cards
 EE=/opt/vipers/edge/edge.env

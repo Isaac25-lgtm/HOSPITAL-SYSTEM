@@ -171,9 +171,15 @@ done
 PUBLIC_IP=$IP bash $S/02-configure.sh || fail "02-configure (passwords)"
 vipers up >/dev/null 2>&1
 docker cp $S/crater-hospital-user.php bahmni-lite-crater-php-1:/tmp/crater-hospital-user.php >/dev/null || fail "copy billing script"
-docker exec -e VH_EMAIL="$BEMAIL" -e VH_PASS="$PASS" -e VH_NAME="$HOSP" -e VH_OWNER_EMAIL=owner@vipers-hospital.test -e VH_OWNER_PASS="$NEWCRA" \
-  bahmni-lite-crater-php-1 php /tmp/crater-hospital-user.php 2> >(grep -v -i deprecat >&2) || fail "billing setup"
-docker exec bahmni-lite-crater-php-1 rm -f /tmp/crater-hospital-user.php
+# (stderr goes to a file, not "2> >(grep ...)": under set -E the ERR trap fires inside that helper when grep finds
+#  nothing to print, which failed a successful step)
+if ! docker exec -e VH_EMAIL="$BEMAIL" -e VH_PASS="$PASS" -e VH_NAME="$HOSP" -e VH_OWNER_EMAIL=owner@vipers-hospital.test -e VH_OWNER_PASS="$NEWCRA" \
+  bahmni-lite-crater-php-1 php /tmp/crater-hospital-user.php 2>"$T/crater.err"; then
+  grep -v -i deprecat "$T/crater.err" >&2 || true
+  fail "billing setup"
+fi
+rm -f "$T/crater.err"
+docker exec -u 0 bahmni-lite-crater-php-1 rm -f /tmp/crater-hospital-user.php   # copied in as root, so removed as root
 vipers dc up -d --force-recreate crater-php crater-nginx crater-atomfeed >/dev/null 2>&1
 
 # current web layer from the main server, so servers made from an older image still look current
