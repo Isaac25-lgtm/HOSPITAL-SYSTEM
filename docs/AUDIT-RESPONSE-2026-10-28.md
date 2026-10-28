@@ -61,9 +61,27 @@ Verification added with this change:
 | 45 | Low | **Fixed** | Host tools are installed whether or not Docker is already present. |
 | 46 | Low | **Fixed** | `02-configure.sh` uses `umask 077` and builds `.env.vipers` in a private temp file replaced in one step. |
 
-## New with this change: hospitals can delete their own space
+## New with this change: hospitals can delete their own account
 
-A signed-in hospital sees **Delete account** in the top bar. The dialog asks for the username; the hospital's
-server checks that the browser's OpenMRS session belongs to the hospital account, then asks the main server to delete it
-with a per-server secret token (created at sign-up, only its SHA-256 kept in the registry, removed from instance metadata
-once the server is ready). The main server deletes the server and frees the slot. See `docs/TRIAL-PORTAL.md`.
+A signed-in hospital sees **Delete account** in the top bar. The dialog asks for the account password, which the
+hospital's server checks directly against OpenMRS; it then asks the main server to delete it with a per-server secret
+token (created at sign-up, only its SHA-256 kept in the registry, removed from instance metadata once the server is
+ready). The main server deletes the server and frees the slot. Verified end to end on a real trial server.
+See `docs/TRIAL-PORTAL.md`.
+
+## Also found and fixed while verifying
+
+- **Older screens sometimes lost the VIPERS layer** (theme, help, Ask Vipers AI): the legacy apps fetch their own
+  `index.html` in the background with `Accept: */*`; the edge only injected into requests that announce a page load, and the
+  browser then reused that cached, un-injected copy for the real visit. `edge/Caddyfile` now also injects into `*.html`
+  and `*/` documents (only when the first rule did not apply, so never twice; `vipers.js` also guards against a double
+  load). `tests/wf-loading.js` passes again.
+- **Stock-phrase fixes inside table cells**: after the finding-16 change, exact interface phrases (e.g. the misleading
+  appointments sentence) inside table cells were no longer fixed. They are now applied everywhere outside editable
+  fields; product-name branding still never touches clinical content.
+- `tests/wf-qa-fixes.js` checked "Smoking status" on screen, which only appears once a value is recorded; it now checks the
+  dashboard configuration the browser receives (vitals are still checked on screen).
+
+Final verification (28 Oct 2026, evening): acceptance 114/114, QA fixes 14/14, sign-in cards 18/18, phone 6/6, loading 3/3,
+`unit-ai.js` 17/17, `unit-trial.js` 15/15, and a real trial server end to end (fail-closed setup, demo/default passwords
+refused, billing demo cashier refused, secrets removed from metadata, Delete account 8/8, server removed from the cloud).

@@ -20,10 +20,11 @@ const ok = (step, pass, note = '') => { R.push({ step, pass, note }); console.lo
     await del.click();
     const go = page.locator('.vp-del-go');
     ok('confirmation dialog opens with the delete button disabled', await go.isDisabled());
-    await page.fill('.vp-del-dialog input', 'wrong-name');
-    ok('a wrong username keeps it disabled', await go.isDisabled());
-    await page.fill('.vp-del-dialog input', process.env.HUSER);
-    ok('the exact username enables it', await go.isEnabled());
+    await page.fill('.vp-del-dialog input', 'not-the-password');
+    await go.click();
+    ok('a wrong password is refused and nothing is deleted', await page.locator('.vp-del-msg:has-text("not correct")').waitFor({ timeout: 20000 }).then(() => true).catch(() => false));
+    await page.fill('.vp-del-dialog input', process.env.HPASS);
+    ok('the button is enabled for the real password', await go.isEnabled());
     await shot(page, 'trial-delete-dialog');
     if (process.env.DELETE === '1') {
       await go.click();

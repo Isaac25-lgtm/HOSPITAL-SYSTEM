@@ -96,8 +96,10 @@
     if (e.closest(CHROME_SEL)) return true;
     // short labels such as "Bahmni Help" or "About Crater" (up to four words) outside clinical content
     var words = n.nodeValue.trim().split(/\s+/).length;
-    return STANDALONE.test(n.nodeValue) || words <= 4 || TEXT_FIXES.some(function (f) { return f[0].test(n.nodeValue); });
+    return STANDALONE.test(n.nodeValue) || words <= 4 || stockPhrase(n);
   }
+  // the exact stock phrases in TEXT_FIXES are interface text, never patient data: they are fixed wherever they appear
+  function stockPhrase(n) { return TEXT_FIXES.some(function (f) { return f[0].test(n.nodeValue); }); }
   function brandTitle() {
     var t = document.title || '';
     var nt = t.replace(BRAND_RE, BRAND).replace(/\bCrater\b/g, BRAND + ' Billing').replace(/^OpenMRS\b/, BRAND);
@@ -109,14 +111,15 @@
       acceptNode: function (n) {
         if (!n.nodeValue || !FIX_TEST.test(n.nodeValue)) return NodeFilter.FILTER_REJECT;
         var p = n.parentNode && n.parentNode.nodeName;
-        return /^(SCRIPT|STYLE|TEXTAREA|INPUT|CODE|PRE)$/.test(p) || (n.parentNode.closest && n.parentNode.closest('#vipers-root,[contenteditable]')) || !brandable(n)
+        return /^(SCRIPT|STYLE|TEXTAREA|INPUT|CODE|PRE)$/.test(p) || (n.parentNode.closest && n.parentNode.closest('#vipers-root,[contenteditable]')) || !(brandable(n) || stockPhrase(n))
           ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
       }
     });
     var n, nodes = [];
     while ((n = w.nextNode())) nodes.push(n);
     nodes.forEach(function (t) {
-      var v = t.nodeValue.replace(BRAND_RE, BRAND).replace(/\bCrater\b/g, BRAND + ' Billing');
+      // product names only where brandable(); stock phrases anywhere (outside editable fields)
+      var v = brandable(t) ? t.nodeValue.replace(BRAND_RE, BRAND).replace(/\bCrater\b/g, BRAND + ' Billing') : t.nodeValue;
       TEXT_FIXES.forEach(function (f) { v = v.replace(f[0], f[1]); });
       if (v !== t.nodeValue) t.nodeValue = v;
     });
@@ -593,19 +596,20 @@
   }
 
   // "Delete account": shown to the signed-in hospital as soon as it is past the sign-in page. Our own dialog
-  // (no browser pop-ups); the hospital types its username to confirm. The server checks the session again.
+  // (no browser pop-ups); the hospital confirms with its account password, which the server checks.
   function ensureDeleteButton() {
     if (!SITE || SITE.mode !== 'hospital' || BILLING || /login/i.test(location.hash || '') || !document.body) return;
     var hdrTag = document.getElementById('vp-hdr-badge');
     if (hdrTag && hdrTag.textContent !== 'TRIAL') { hdrTag.textContent = 'TRIAL'; hdrTag.title = SITE.hospital + ' - all data is deleted on ' + trialDate(); }
-    if (document.getElementById('vp-del')) return;
-    var b = el('button', { id: 'vp-del', type: 'button', class: 'vp-del-btn', text: 'Delete account', title: 'Delete this hospital account and all its data now', onclick: openDeleteDialog });
-    if (hdrTag && hdrTag.parentNode) hdrTag.parentNode.insertBefore(b, hdrTag.nextSibling);
-    else { var badge = root && root.querySelector('.vp-badge'); if (badge) badge.appendChild(b); }
+    var b = document.getElementById('vp-del');
+    if (!b) b = el('button', { id: 'vp-del', type: 'button', class: 'vp-del-btn', text: 'Delete account', title: 'Delete this hospital account and all its data now', onclick: openDeleteDialog });
+    // placed again on every tick: the app header often renders after the first check (the bottom badge is hidden then)
+    if (hdrTag && hdrTag.parentNode) { if (b.previousSibling !== hdrTag) hdrTag.parentNode.insertBefore(b, hdrTag.nextSibling); }
+    else { var badge = root && root.querySelector('.vp-badge'); if (badge && b.parentNode !== badge) badge.appendChild(b); }
   }
   function openDeleteDialog() {
     if (root.querySelector('.vp-del-dialog')) return;
-    var input = el('input', { type: 'text', autocomplete: 'off', 'aria-label': 'Type your username to confirm', placeholder: SITE.username });
+    var input = el('input', { type: 'password', autocomplete: 'current-password', 'aria-label': 'Your account password' });
     var go = el('button', { type: 'button', class: 'vp-del-go', text: 'Delete permanently', disabled: '' });
     var msg = el('p', { class: 'vp-del-msg', role: 'status' });
     var ov = el('div', { class: 'vp-overlay vp-del-dialog', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Delete account' });
@@ -613,13 +617,13 @@
     var box = el('div', { class: 'vp-tour' }, [
       el('h2', { text: 'Delete this account?' }),
       el('p', { text: 'This permanently deletes the account of ' + SITE.hospital + ' and its whole hospital space, with all its patients, visits, results and invoices. It cannot be undone. (Otherwise it is deleted automatically on ' + trialDate() + '.)' }),
-      el('label', { class: 'vp-del-label', text: 'Type your username (' + SITE.username + ') to confirm:' }), input, msg,
+      el('label', { class: 'vp-del-label', text: 'Enter the password of the account "' + SITE.username + '" to confirm:' }), input, msg,
       el('div', { class: 'vp-tour-actions' }, [el('button', { type: 'button', class: 'vp-link', text: 'Cancel', onclick: close }), el('span', { class: 'vp-grow' }), go])
     ]);
-    input.addEventListener('input', function () { if (input.value.trim().toLowerCase() === SITE.username) go.removeAttribute('disabled'); else go.setAttribute('disabled', ''); });
+    input.addEventListener('input', function () { if (input.value) go.removeAttribute('disabled'); else go.setAttribute('disabled', ''); });
     go.addEventListener('click', function () {
       go.setAttribute('disabled', ''); msg.textContent = 'Deleting' + ELLIPSIS;
-      fetch('/vipers-trial/api/self-delete', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: input.value.trim() }) })
+      fetch('/vipers-trial/api/self-delete', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: input.value }) })
         .then(function (r) { return r.json().then(function (j) { return { ok: r.status === 202, j: j }; }); })
         .then(function (x) {
           if (!x.ok) { msg.textContent = (x.j && x.j.error) || 'The account could not be deleted. Please try again.'; go.removeAttribute('disabled'); return; }

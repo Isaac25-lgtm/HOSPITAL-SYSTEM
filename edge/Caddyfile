@@ -47,6 +47,16 @@
 	replace @page {
 		"</head>" "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/vipers-assets/favicon.svg\"><link rel=\"stylesheet\" href=\"/vipers-assets/vipers.css\"><script defer src=\"/vipers-assets/vipers.js\"></script></head>"
 	}
+	# The older Bahmni apps fetch their own index.html in the background (Accept: */*) and the browser later reuses that
+	# cached copy for the real page visit, which then lacked the VIPERS layer. Pages ending in .html or / are always
+	# documents, so inject those too (only when the first rule did not apply: never twice).
+	@doc {
+		path *.html */
+		not header Accept *text/html*
+	}
+	replace @doc {
+		"</head>" "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/vipers-assets/favicon.svg\"><link rel=\"stylesheet\" href=\"/vipers-assets/vipers.css\"><script defer src=\"/vipers-assets/vipers.js\"></script></head>"
+	}
 }
 
 (vipers_common) {

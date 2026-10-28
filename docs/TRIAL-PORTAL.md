@@ -48,15 +48,19 @@ Runs on every boot; configures once (`/opt/vipers/tenant/configured`).
 8. Only now **open the ports**, serve this server's own hostnames (certificate) and write `site.json` = `hospital`.
    Any failed step leaves the ports closed and writes `hospital-failed`; the portal deletes such servers after 40 minutes.
 
-## Hospitals deleting their own space
+## Hospitals deleting their own account
 
-After signing in, the hospital sees **Delete account** in the top bar (next to TRIAL). The dialog explains that all
-data is deleted permanently and asks for the username. Then:
+After signing in, the hospital sees **Delete account** in the top bar (next to TRIAL). The dialog explains that the
+account and all its data are deleted permanently and asks for the account password. Then:
 
-1. `POST /vipers-trial/api/self-delete` on the hospital's server: only in hospital mode; the OpenMRS session from the
-   browser cookie must belong to the hospital account and the typed username must match.
+1. `POST /vipers-trial/api/self-delete {password}` on the hospital's server: only in hospital mode; the password is checked
+   directly against OpenMRS for the hospital account (Bahmni's session cookie is scoped to `/openmrs` and does not reach
+   this endpoint; re-entering the password is the safer confirmation anyway). 5 attempts per hour.
 2. That server calls `POST <main>/vipers-trial/api/delete {id, token}`. The main server compares the SHA-256 of the token
    with the one stored at sign-up, starts the deletion (same confirmed-delete path as expiry) and frees the slot.
+
+Verified end to end on 28 Oct 2026 (`tests/wf-trial-delete.js` with `DELETE=1`): wrong password refused, right password
+deletes, the server disappears from the cloud.
 
 ## Image
 

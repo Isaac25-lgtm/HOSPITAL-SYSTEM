@@ -24,8 +24,11 @@ const optionWraps = (page, prefix) => page.evaluate(p => {
     await page.waitForTimeout(4000);
     const t = await page.evaluate(() => (document.querySelector('main') || document.body).innerText);
     const basic = t.slice(t.indexOf('Observations'), t.indexOf('Allergies', t.indexOf('Observations')));
-    const want = ['Temperature', 'Blood Pressure', 'Respiratory rate', 'oxygen saturation', 'Smoking status'];
-    const missing = want.filter(w => !t.includes(w));
+    // vitals recorded by the Doctor test are on screen; Smoking status only shows once a value is recorded, so it is
+    // checked in the dashboard configuration that the browser actually receives
+    const cfg = await page.evaluate(() => fetch('/bahmni_config/openmrs/apps/clinical/v2/dashboards/general.json', { cache: 'reload' }).then(r => r.text()).catch(() => ''));
+    const want = ['Temperature', 'Blood Pressure', 'Respiratory rate', 'oxygen saturation'];
+    const missing = want.filter(w => !t.includes(w)).concat(cfg.includes('Smoking status') ? [] : ['Smoking status (config)']);
     ok('Dashboard shows all vitals + smoking status', missing.length === 0, missing.length ? 'missing: ' + missing.join(', ') : 'all present');
     ok('Radiology tab removed', !/Radiology Investigations/.test(t));
     const w = await optionWraps(page, 'cds');

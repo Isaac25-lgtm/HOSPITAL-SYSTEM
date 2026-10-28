@@ -290,20 +290,22 @@ async function readJson(req) {
 }
 
 // ---------- deleting a hospital space ----------
-// On the hospital's own server: the signed-in hospital account asks for its space to be deleted. The OpenMRS
-// session from the browser cookie must belong to the hospital account, and the username must be typed to confirm.
+// On the hospital's own server: the signed-in hospital asks for its account (and space) to be deleted, confirming
+// with the account password, which is checked directly against OpenMRS. (Bahmni's session cookie is scoped to
+// /openmrs, so it never reaches this endpoint; re-entering the password is also the safer confirmation.)
 const siteInfo = () => { try { return JSON.parse(fs.readFileSync(SITE_FILE, 'utf8')); } catch { return {}; } };
-async function sessionUser(req) {
+async function passwordOk(username, password) {
+  if (!password || password.length > 128) return false;
   const r = await fetch('http://openmrs:8080/openmrs/ws/rest/v1/session?v=custom:(authenticated,user:(username))',
-    { headers: { Cookie: req.headers.cookie || '', Accept: 'application/json' }, signal: AbortSignal.timeout(8000) }).catch(() => null);
+    { headers: { Authorization: 'Basic ' + Buffer.from(username + ':' + password).toString('base64'), Accept: 'application/json' },
+      signal: AbortSignal.timeout(8000) }).catch(() => null);
   const j = r && r.ok ? await r.json().catch(() => null) : null;
-  return j && j.authenticated && j.user ? j.user.username : '';
+  return !!(j && j.authenticated && j.user && j.user.username === username);
 }
 async function selfDelete(req, body) {
   const site = siteInfo(), id = env('TRIAL_ID', ''), tok = env('TRIAL_DELETE_TOKEN', ''), ctl = env('TRIAL_CONTROLLER', '');
   if (site.mode !== 'hospital' || !id || !tok || !ctl) return { status: 404, body: { error: 'Deleting is not available on this server.' } };
-  if ((await sessionUser(req)) !== site.username) return { status: 403, body: { error: 'Please sign in with the hospital account first.' } };
-  if (String(body.confirm || '').trim().toLowerCase() !== site.username) return { status: 400, body: { error: 'Type your username exactly to confirm.' } };
+  if (!(await passwordOk(site.username, String(body.password || '')))) return { status: 403, body: { error: 'That password is not correct.' } };
   const r = await fetch(ctl + '/vipers-trial/api/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, token: tok }), signal: AbortSignal.timeout(20000) }).catch(() => null);
   if (!r || r.status !== 202) return { status: 502, body: { error: 'The deletion could not be started. Please try again in a few minutes.' } };
