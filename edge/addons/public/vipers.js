@@ -692,12 +692,18 @@
     root.appendChild(spinBanner);
   }
 
-  // Bahmni sometimes renders the language selector with no value (blank box): default it to English
+  // VIPERS HOSPITAL is English only. Bahmni sometimes leaves the language selector blank, or fills it with junk
+  // (once with the text of an HTML page): keep a single "English" option and select it.
   function fixLocale() {
     var loc = document.getElementById("locale");
-    if (!loc || (loc.value && loc.value !== "?")) return;
-    var en = [].filter.call(loc.options, function (o) { return o.value === "string:en"; })[0];
-    if (en) setVal(loc, en.value);
+    if (!loc) return;
+    var en = null;
+    [].slice.call(loc.options).forEach(function (o) {
+      if (o.value === "string:en" && !en) en = o; else o.parentNode.removeChild(o);
+    });
+    if (!en) { en = document.createElement("option"); en.value = "string:en"; loc.appendChild(en); }
+    if (en.textContent !== "English") en.textContent = "English";
+    if (loc.value !== "string:en") setVal(loc, "string:en");
   }
 
   function demoLogin() {
