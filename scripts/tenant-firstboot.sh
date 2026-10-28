@@ -119,7 +119,8 @@ A="superman:$NEWOWN"
 auth_ok superman "$NEWOWN" || fail "new owner password not accepted"
 sed "s|^OPENMRS_OWNER_PASSWORD=.*|OPENMRS_OWNER_PASSWORD=$NEWOWN|; s|^CRATER_OWNER_PASSWORD=.*|CRATER_OWNER_PASSWORD=$NEWCRA|" /opt/vipers/secrets/vipers.env > "$T/vipers.env.tmp"
 sync -f "$T/vipers.env.tmp"; mv "$T/vipers.env.tmp" /opt/vipers/secrets/vipers.env
-ADMIN_UUID=$(q "$API/user?username=admin&v=custom:(uuid,username)" | jq -r '.results[] | select(.username=="admin") | .uuid')
+# the sync account is identified by its system ID "admin" (its username may be empty), as in 04-harden.sh
+ADMIN_UUID=$(q "$API/user?q=admin&v=custom:(uuid,username,systemId)" | jq -r '[.results[] | select(.username=="admin" or .systemId=="admin") | .uuid][0] // empty')
 [ -n "$ADMIN_UUID" ] || fail "sync user missing"
 q -o /dev/null -w '%{http_code}' -d "$(jq -nc --arg n "$NEWOWN" '{newPassword:$n}')" "$API/password/$ADMIN_UUID" | need "sync user password"
 auth_ok admin "$NEWOWN" || fail "sync password not accepted"
