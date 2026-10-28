@@ -4,6 +4,8 @@ Scope: a demonstration / trial deployment with **fictional data only**. It makes
 security or regulatory compliance (e.g. Uganda's Data Protection and Privacy Act). Please audit it with that context,
 and flag anything that would block a production rollout.
 
+The first audit (28 Oct 2026, 46 findings) and what was done about each finding: [AUDIT-RESPONSE-2026-10-28.md](AUDIT-RESPONSE-2026-10-28.md).
+
 ## Trust boundaries
 
 - **Public:** Caddy (80/443). Everything else listens on localhost or the Docker network. SSH only via Google IAP.

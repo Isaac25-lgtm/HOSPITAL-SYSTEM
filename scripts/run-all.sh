@@ -26,7 +26,11 @@ echo "### perf" | log;       $RT wf-perf.js PATIENT=$P USERS=6 2>&1 | log | save
 echo "### inpatient" | log;  $RT wf-inpatient.js PATIENT=$P 2>&1 | log | save inpatient
 echo "$LAST $P" > $OUT/test-patient.txt
 echo "### SUMMARY" | log
+BAD=0
 for f in $OUT/*.json; do
   n=$(basename $f .json); t=$(jq length $f 2>/dev/null || echo 0); p=$(jq '[.[] | select(.pass)] | length' $f 2>/dev/null || echo 0)
   echo "$n: $p/$t passed" | log
+  # an empty or unreadable result file means the suite crashed: that is a failure, not a pass
+  [ "$t" -gt 0 ] && [ "$p" = "$t" ] || BAD=1
 done
+[ "$BAD" = 0 ] && echo "RESULT: ALL PASSED" | log || { echo "RESULT: FAILURES (see above)" | log; exit 1; }

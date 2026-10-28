@@ -49,5 +49,6 @@ function relevantSteps(question, page) {
 }
 
 const PAGE_TITLES = new Proxy({}, { get: (_, p) => (kb().pages[p] || {}).title || p });
+const knownPage = p => typeof p === 'string' && Object.prototype.hasOwnProperty.call(kb().pages, p);
 
-module.exports = { findStatic, relevantSteps, PAGE_TITLES };
+module.exports = { findStatic, relevantSteps, PAGE_TITLES, knownPage };

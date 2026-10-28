@@ -7,6 +7,11 @@ SRC=/var/lib/docker/volumes/bahmni-lite_bahmni-config/_data/openmrs/apps
 OV=/opt/vipers/branding/config-overlay/openmrs/apps
 PUB=/opt/vipers/edge/addons/public
 mkdir -p $OV/home $OV/registration/registrationCardLayout/images $OV/customDisplayControl/images
+# overlay files kept in the kit (clinical dashboard, In-Patient app and labels); generated files below are separate
+KIT_OV="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)/config-overlay/openmrs"
+for sub in apps/clinical apps/adt i18n/adt; do
+  [ -d "$KIT_OV/$sub" ] && mkdir -p "/opt/vipers/branding/config-overlay/openmrs/$sub" && cp -r "$KIT_OV/$sub/." "/opt/vipers/branding/config-overlay/openmrs/$sub/"
+done
 
 # Use pristine release copies (taken once) as the base, so re-runs never compound edits.
 BASE=/opt/vipers/branding/release-base; mkdir -p $BASE

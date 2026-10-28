@@ -75,15 +75,24 @@
 #vipers-root .vp-check { font-size: 12px; color: var(--vp-muted); display: inline-flex; gap: 4px; align-items: center; }
 
 /* compact mode inside data-entry forms */
-#vipers-root.vp-compact .vp-ai-btn span { display: none; }
-#vipers-root.vp-compact .vp-ai-btn { width: 36px; padding: 0; }
+/* the "Ask Vipers AI" words always stay visible (owner's request); only the padding tightens */
+#vipers-root.vp-compact .vp-ai-btn { padding: 0 10px; }
 #vipers-root.vp-compact .vp-badge-note { display: none; }
+
+/* "Delete hospital space" (hospital trial servers only): in the header next to TRIAL, or in the bottom-left badge */
+.vp-del-btn { margin-left: 10px; height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid #fecaca; background: #fff5f5; color: #b42318;
+  font: 600 12px/1 "IBM Plex Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; cursor: pointer; white-space: nowrap; align-self: center; }
+.vp-del-btn:hover { background: #fee2e2; }
+#vipers-root .vp-del-label { display: block; margin: 4px 0 6px; font-size: 13px; color: #374151; }
+#vipers-root .vp-del-dialog input { width: 100%; box-sizing: border-box; height: 38px; padding: 0 10px; border: 1.5px solid #bcd3cf; border-radius: 8px; font-size: 14px; }
+#vipers-root .vp-del-msg { min-height: 18px; margin: 8px 0 0; font-size: 13px; color: #b42318; }
+#vipers-root .vp-del-go { background: #b42318; border: 1px solid #b42318; color: #fff; border-radius: 8px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
+#vipers-root .vp-del-go[disabled] { opacity: .45; cursor: not-allowed; }
 
 /* small screens: keep the layer out of the way */
 @media (max-width: 640px) {
   #vipers-root .vp-badge-note { display: none; }
-  #vipers-root .vp-ai-btn span { display: none; }
-  #vipers-root .vp-ai-btn { width: 36px; padding: 0; }
+  #vipers-root .vp-ai-btn { padding: 0 10px; font-size: 12px; }
   #vipers-root .vp-panel { right: 8px; left: 8px; width: auto; max-width: none; bottom: calc(56px + var(--vp-lift, 0px)); }
 }
 @media print { #vipers-root { display: none !important; } }

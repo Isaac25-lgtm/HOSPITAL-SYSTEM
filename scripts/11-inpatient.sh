@@ -35,18 +35,19 @@ ward() {
     u=$(q -d "$(jq -nc --arg n "$name" --arg p "$HOSP" --arg t "$TAG" '{name:$n,description:"VIPERS HOSPITAL ward",parentLocation:$p,tags:[$t]}')" "$API/location" | jq -r '.uuid')
     echo "ward $name created: $u"
   fi
-  # beds: only if this ward has none yet
-  local have; have=$(q "$API/admissionLocation/$u?v=full" | jq '[.bedLayouts[]? | select(.bedNumber != null)] | length')
-  if [ "${have:-0}" = "0" ]; then
-    local n=0 r c
-    for r in $(seq 1 "$rows"); do for c in $(seq 1 "$cols"); do
-      n=$((n + 1))
-      local resp; resp=$(q -d "$(jq -nc --arg b "$(printf '%s%02d' "$pre" "$n")" --argjson r "$r" --argjson c "$c" --arg l "$u" \
-        '{bedNumber:$b,bedType:"standard",row:$r,column:$c,locationUuid:$l,status:"AVAILABLE"}')" "$API/bed")
-      [ "$n" = 1 ] && echo "  first bed: $(echo "$resp" | jq -c '{uuid, bedNumber, error: .error.message}' 2>/dev/null || echo "$resp" | head -c 200)"
-    done; done
-    echo "ward $name: $(q "$API/admissionLocation/$u?v=full" | jq '[.bedLayouts[]? | select(.bedNumber != null)] | length') beds"
-  fi
+  # beds: create each expected bed that is missing (an interrupted earlier run is completed, never duplicated)
+  local existing; existing=$(q "$API/admissionLocation/$u?v=full" | jq -r '.bedLayouts[]? | select(.bedNumber != null) | .bedNumber')
+  local n=0 r c b
+  for r in $(seq 1 "$rows"); do for c in $(seq 1 "$cols"); do
+    n=$((n + 1)); b=$(printf '%s%02d' "$pre" "$n")
+    grep -qx "$b" <<<"$existing" && continue
+    local resp; resp=$(q -d "$(jq -nc --arg b "$b" --argjson r "$r" --argjson c "$c" --arg l "$u" \
+      '{bedNumber:$b,bedType:"standard",row:$r,column:$c,locationUuid:$l,status:"AVAILABLE"}')" "$API/bed")
+    echo "  bed $b: $(echo "$resp" | jq -r '.uuid // .error.message' 2>/dev/null | head -c 120)"
+  done; done
+  local got; got=$(q "$API/admissionLocation/$u?v=full" | jq '[.bedLayouts[]? | select(.bedNumber != null)] | length')
+  echo "ward $name: $got beds"
+  [ "$got" -ge $((rows * cols)) ] || { echo "FAIL: ward $name has $got of $((rows * cols)) beds"; BEDS_FAILED=1; }
 }
 ward "Female Ward"     FW 2 5
 ward "Male Ward"       MW 2 5
@@ -86,3 +87,4 @@ install -m 644 $SRC/locale_en.json $V/i18n/adt/locale_en.json
 install -m 644 $O/apps/home/extension.json $V/apps/home/extension.json
 install -m 644 $O/apps/home/v2/extension.json $V/apps/home/v2/extension.json
 echo "ADT config + In-Patient tile installed"
+exit ${BEDS_FAILED:-0}

@@ -4,7 +4,8 @@
 source "$(dirname "$0")/00-guard.sh" 2>/dev/null || source /tmp/00-guard.sh
 set +e
 PW_IMAGE=mcr.microsoft.com/playwright:v1.48.2-noble
-mkdir -p /opt/vipers/tests && tar -xzf /tmp/tests.tgz -C /opt/vipers/tests 2>/dev/null
+# a test package is unpacked only when asked for (a leftover /tmp/tests.tgz must never replace newer tests)
+mkdir -p /opt/vipers/tests && [ "${UNPACK_TESTS:-}" = 1 ] && [ -f /tmp/tests.tgz ] && tar -xzf /tmp/tests.tgz -C /opt/vipers/tests
 find /opt/vipers/tests -maxdepth 1 -name '*.js' -exec sed -i 's/\r$//' {} +
 cd /opt/vipers/tests
 [ -d node_modules/playwright ] || docker run --rm -v /opt/vipers/tests:/t -w /t $PW_IMAGE npm i --silent --no-audit --no-fund playwright@1.48.2 >/dev/null 2>&1

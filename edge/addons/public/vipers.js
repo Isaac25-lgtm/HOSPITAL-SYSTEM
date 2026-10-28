@@ -83,6 +83,21 @@
     [/^\s*InPatient\s*$/, 'In-Patient']
   ];
   var FIX_TEST = /bahmni|Crater|Simple Invoicing|successfully uploaded|any of the Providers|Implementer Interface|^\s*InPatient\s*$/i;
+  // Text is rebranded only inside interface chrome, or when the whole text is just a product name or one of the
+  // stock phrases above, and never inside patient or clinical content (a patient called Crater keeps their name).
+  var CLINICAL_SEL = 'td, textarea, [contenteditable], [class*="patient"], [class*="Patient"], [class*="diagnos"], [class*="Diagnos"], ' +
+    '[class*="observation"], [class*="Observation"], [class*="note"], [class*="Note"], [data-testid*="patient"], .dashboard-section, .cds--data-table';
+  var CHROME_SEL = 'header, nav, footer, aside, h1, h2, h3, h4, label, button, th, option, legend, [role="menu"], [role="menuitem"], [role="tab"], ' +
+    '.login, .cds--header, .cds--side-nav, .bx--header, .dashboard .apps, .app-name';
+  var STANDALONE = /^\s*(powered by\s+)?(bahmni(\s+(emr|lite|clinic))?(\s+(login|home))?|crater)\s*[.:!]?\s*$/i;
+  function brandable(n) {
+    var e = n.parentNode;
+    if (!e.closest || e.closest(CLINICAL_SEL)) return false;
+    if (e.closest(CHROME_SEL)) return true;
+    // short labels such as "Bahmni Help" or "About Crater" (up to four words) outside clinical content
+    var words = n.nodeValue.trim().split(/\s+/).length;
+    return STANDALONE.test(n.nodeValue) || words <= 4 || TEXT_FIXES.some(function (f) { return f[0].test(n.nodeValue); });
+  }
   function brandTitle() {
     var t = document.title || '';
     var nt = t.replace(BRAND_RE, BRAND).replace(/\bCrater\b/g, BRAND + ' Billing').replace(/^OpenMRS\b/, BRAND);
@@ -94,7 +109,7 @@
       acceptNode: function (n) {
         if (!n.nodeValue || !FIX_TEST.test(n.nodeValue)) return NodeFilter.FILTER_REJECT;
         var p = n.parentNode && n.parentNode.nodeName;
-        return /^(SCRIPT|STYLE|TEXTAREA|INPUT|CODE|PRE)$/.test(p) || (n.parentNode.closest && n.parentNode.closest('#vipers-root,[contenteditable]'))
+        return /^(SCRIPT|STYLE|TEXTAREA|INPUT|CODE|PRE)$/.test(p) || (n.parentNode.closest && n.parentNode.closest('#vipers-root,[contenteditable]')) || !brandable(n)
           ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
       }
     });
@@ -396,11 +411,12 @@
     aiLog.appendChild(wait);
     fetch('/vipers-ai/api/chat', {
       method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question: q, page: pageId(), role: role, history: chatHistory.slice(-4), title: document.title, screen: screenLabels() })
+      body: JSON.stringify({ question: q, page: pageId(), role: role, history: chatHistory.slice(-4), screen: screenLabels() })
     }).then(function (r) { return r.json(); }).then(function (j) {
       wait.remove();
       addMsg('bot', j.answer || 'Sorry, something went wrong. Please use the Help (?) panel.', j.source);
-      chatHistory.push({ role: 'user', content: q }, { role: 'assistant', content: j.answer || '' });
+      // a question refused for privacy or scope was not sent anywhere, so it must not travel later as history either
+      if (j.source !== 'privacy' && j.source !== 'policy') chatHistory.push({ role: 'user', content: q }, { role: 'assistant', content: j.answer || '' });
     }).catch(function () {
       wait.remove();
       addMsg('bot', 'Ask Vipers AI is not reachable right now. The Help (?) panel still has step-by-step instructions.');
@@ -576,6 +592,48 @@
     if (u && SITE.username && !u.value) setVal(u, SITE.username);
   }
 
+  // "Delete hospital space": shown to the signed-in hospital as soon as it is past the sign-in page. Our own dialog
+  // (no browser pop-ups); the hospital types its username to confirm. The server checks the session again.
+  function ensureDeleteButton() {
+    if (!SITE || SITE.mode !== 'hospital' || BILLING || /login/i.test(location.hash || '') || !document.body) return;
+    var hdrTag = document.getElementById('vp-hdr-badge');
+    if (hdrTag && hdrTag.textContent !== 'TRIAL') { hdrTag.textContent = 'TRIAL'; hdrTag.title = SITE.hospital + ' - all data is deleted on ' + trialDate(); }
+    if (document.getElementById('vp-del')) return;
+    var b = el('button', { id: 'vp-del', type: 'button', class: 'vp-del-btn', text: 'Delete hospital space', title: 'Delete this hospital space and all its data now', onclick: openDeleteDialog });
+    if (hdrTag && hdrTag.parentNode) hdrTag.parentNode.insertBefore(b, hdrTag.nextSibling);
+    else { var badge = root && root.querySelector('.vp-badge'); if (badge) badge.appendChild(b); }
+  }
+  function openDeleteDialog() {
+    if (root.querySelector('.vp-del-dialog')) return;
+    var input = el('input', { type: 'text', autocomplete: 'off', 'aria-label': 'Type your username to confirm', placeholder: SITE.username });
+    var go = el('button', { type: 'button', class: 'vp-del-go', text: 'Delete permanently', disabled: '' });
+    var msg = el('p', { class: 'vp-del-msg', role: 'status' });
+    var ov = el('div', { class: 'vp-overlay vp-del-dialog', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Delete hospital space' });
+    var close = function () { ov.remove(); };
+    var box = el('div', { class: 'vp-tour' }, [
+      el('h2', { text: 'Delete this hospital space?' }),
+      el('p', { text: 'This permanently deletes the hospital space of ' + SITE.hospital + ' with all its patients, visits, results and invoices. It cannot be undone. (Otherwise it is deleted automatically on ' + trialDate() + '.)' }),
+      el('label', { class: 'vp-del-label', text: 'Type your username (' + SITE.username + ') to confirm:' }), input, msg,
+      el('div', { class: 'vp-tour-actions' }, [el('button', { type: 'button', class: 'vp-link', text: 'Cancel', onclick: close }), el('span', { class: 'vp-grow' }), go])
+    ]);
+    input.addEventListener('input', function () { if (input.value.trim().toLowerCase() === SITE.username) go.removeAttribute('disabled'); else go.setAttribute('disabled', ''); });
+    go.addEventListener('click', function () {
+      go.setAttribute('disabled', ''); msg.textContent = 'Deleting' + ELLIPSIS;
+      fetch('/vipers-trial/api/self-delete', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: input.value.trim() }) })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.status === 202, j: j }; }); })
+        .then(function (x) {
+          if (!x.ok) { msg.textContent = (x.j && x.j.error) || 'The space could not be deleted. Please try again.'; go.removeAttribute('disabled'); return; }
+          box.textContent = '';
+          box.appendChild(el('h2', { text: 'Your hospital space is being deleted' }));
+          box.appendChild(el('p', { text: 'All data of ' + SITE.hospital + ' is being removed. This page will stop working within a few minutes. Thank you for trying VIPERS HOSPITAL.' }));
+          fetch('/openmrs/ws/rest/v1/session', { method: 'DELETE', credentials: 'same-origin' }).catch(function () {});
+        })
+        .catch(function () { msg.textContent = 'The space could not be deleted. Please check the connection and try again.'; go.removeAttribute('disabled'); });
+    });
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.appendChild(box); root.appendChild(ov); input.focus();
+  }
+
   // Bahmni sometimes renders the language selector with no value (blank box): default it to English
   function fixLocale() {
     var loc = document.getElementById("locale");
@@ -674,16 +732,22 @@
     fetch('/openmrs/ws/fhir2/R4/Condition?category=encounter-diagnosis&patient=' + m[1] + '&_count=10&_sort=-_lastUpdated', { credentials: 'same-origin', headers: { Accept: 'application/fhir+json' } })
       .then(function (r) { return r.json(); })
       .then(function (b) {
-        var rows = (b.entry || []).map(function (x) {
-          var c = x.resource, code = c.code || {};
+        var code0 = function (cc) { return (((cc || {}).coding || [])[0] || {}).code || ''; };
+        var cap = function (t) { return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''; };
+        var rows = (b.entry || []).map(function (x) { return x.resource; }).filter(function (c) {
+          return c && !/^(refuted|entered-in-error)$/.test(code0(c.verificationStatus));
+        }).map(function (c) {
+          var code = c.code || {};
           var name = code.text || ((code.coding || [])[0] || {}).display || 'Diagnosis';
-          var cert = (((c.verificationStatus || {}).coding || [])[0] || {}).code || '';
+          var status = [cap(code0(c.verificationStatus)), cap(code0(c.clinicalStatus))].filter(Boolean).join(', ');
           var when = (c.recordedDate || '').slice(0, 10).split('-').reverse().join('/');
-          return name + (cert ? ' - ' + cert.charAt(0).toUpperCase() + cert.slice(1) : '') + (when ? ' (' + when + (c.recorder && c.recorder.display ? ', ' + c.recorder.display : '') + ')' : '');
+          return name + (status ? ' - ' + status : '') + (when ? ' (' + when + (c.recorder && c.recorder.display ? ', ' + c.recorder.display : '') + ')' : '');
         });
-        if (!rows.length) return;
+        // the user may have moved to another patient while this was loading
+        if (!rows.length || location.hash.indexOf(m[1]) < 0) return;
         var ul = el('ul', { class: 'vp-adt-dx' }, rows.map(function (t) { return el('li', { text: t }); }));
         empty.textContent = '';
+        empty.appendChild(el('p', { class: 'vp-adt-dx-note', text: 'Diagnoses from consultations (all visits, most recent first):' }));
         empty.appendChild(ul);
       }).catch(function () {});
   }
@@ -756,7 +820,7 @@
       setTimeout(function () { pending = false; brandAll(); }, 250);
     }).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
     window.addEventListener('hashchange', onRoute);
-    setInterval(function () { onRoute(); placeThemeSwitch(); liftAboveBottomBars(); demoLogin(); adtDiagnoses(); markSecondaryButtons(); }, 700);
+    setInterval(function () { onRoute(); placeThemeSwitch(); ensureDeleteButton(); liftAboveBottomBars(); demoLogin(); adtDiagnoses(); markSecondaryButtons(); }, 700);
     window.addEventListener('resize', liftAboveBottomBars); // SPA routes that don't fire hashchange
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePanels(); });
   }

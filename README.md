@@ -12,7 +12,7 @@ scripts, an AI navigation helper, a self-service **hospital trial portal** and a
 
 | Area | What VIPERS adds on top of Bahmni Lite 2.0 |
 |---|---|
-| Access | One-click role cards on the demo (no passwords); a self-service **trial portal**: each hospital opens an account and gets its **own server** (one login, every module), deleted automatically after 5 days, max 3 at once |
+| Access | One-click role cards on the demo (no passwords); a self-service **trial portal**: each hospital opens an account and gets its **own server** (one login, every module), deleted automatically after 5 days or by the hospital itself ("Delete hospital space"), max 3 at once |
 | Clinical | Inpatient care switched on (wards, 32 beds, admit / transfer / discharge, Ward Nurse role), dashboard shows all vitals, ward screens show diagnoses from the 2.0 consultation |
 | Look | Full redesign (Home tiles, sign-in cards, all older screens, billing), clearer borders, photo background, evening (dark) mode switch in the top bar, loading hints, readable dropdowns, phone layouts |
 | Help | Contextual "?" help per screen, first-login tour, **Ask Vipers AI** (DeepSeek) with a whole-system guide, screen awareness, "Explain this screen", privacy and medical-advice filters, token ceilings |
@@ -44,6 +44,7 @@ scripts, an AI navigation helper, a self-service **hospital trial portal** and a
 - [docs/TRIAL-PORTAL.md](docs/TRIAL-PORTAL.md) - how hospital accounts and their servers are created and deleted
 - [docs/TESTING.md](docs/TESTING.md) - the acceptance suite and how to run it
 - [docs/SECURITY-AUDIT.md](docs/SECURITY-AUDIT.md) - threat model, sensitive code paths and known gaps (**start here for an audit**)
+- [docs/AUDIT-RESPONSE-2026-10-28.md](docs/AUDIT-RESPONSE-2026-10-28.md) - what was fixed for each of the 46 findings of the first audit, and what is still open
 - [DEPLOYMENT.md](DEPLOYMENT.md) - operating the Google Cloud demo, fresh installs, offline install
 - [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) - what is upstream behaviour and not fixable at this layer
 - [AI_INTEGRATION.md](AI_INTEGRATION.md), [CLOUD_COSTS.md](CLOUD_COSTS.md), [DEMO_CREDENTIALS.md](DEMO_CREDENTIALS.md)

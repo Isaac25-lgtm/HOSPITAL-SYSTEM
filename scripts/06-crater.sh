@@ -18,9 +18,14 @@ fi
 # The Bahmni->Crater patient sync (crater-atomfeed) hard-codes crater.currency.id=13 for new
 # customers (13 = INR in Crater's seed). Make row 13 the Uganda Shilling by swapping the two rows,
 # so synced patients are billed in UGX without patching upstream code.
-if [ "$(M "select code from currencies where id=13")" != "UGX" ]; then
+# Only safe before any money has been recorded: on a ledger with invoices or payments the swap would relabel
+# existing amounts, so it is refused there (configure the currency through a reviewed migration instead).
+if [ "$(M "select code from currencies where id=13")" != "UGX" ] &&    [ "$(M "select (select count(*) from invoices) + (select count(*) from payments) + (select count(*) from estimates)")" != "0" ]; then
+  echo "REFUSED: currency swap skipped - this billing database already has invoices, payments or estimates"
+elif [ "$(M "select code from currencies where id=13")" != "UGX" ]; then
   OLD=$(M "select id from currencies where code='UGX'")
   docker exec -i -e MYSQL_PWD="$CRATER_DB_PASSWORD" bahmni-lite-craterdb-1 mysql -ucrater crater <<SQL 2>&1 | grep -v Warning
+START TRANSACTION;
 CREATE TEMPORARY TABLE t AS SELECT * FROM currencies WHERE id IN (13,$OLD);
 UPDATE currencies c JOIN t ON t.id = IF(c.id=13,$OLD,13)
   SET c.name=t.name, c.code=t.code, c.symbol=t.symbol, c.\`precision\`=t.\`precision\`,
@@ -30,6 +35,7 @@ UPDATE currencies c JOIN t ON t.id = IF(c.id=13,$OLD,13)
 UPDATE items SET currency_id=13 WHERE currency_id=$OLD;
 UPDATE customers SET currency_id=13 WHERE currency_id=$OLD;
 UPDATE company_settings SET value='13' WHERE \`option\`='currency' AND value='$OLD';
+COMMIT;
 SQL
   echo "currency rows swapped: id 13 is now UGX"
 fi
@@ -64,11 +70,12 @@ docker exec bahmni-lite-crater-php-1 php /tmp/crater-demo-user.php 2>&1 | grep -
 echo "cashier login: $(curl -sk -H 'Accept: application/json' -H 'Content-Type: application/json' -d '{"username":"demo.cashier@vipers.demo","password":"everton","device_name":"check"}' "$CR/auth/login" | jq -r 'if .token then "OK" else (.message // .) end')"
 
 # 7. Service price list (UGX; Crater stores amounts x100)
-item() { [ -n "$(M "select id from items where name='$1' and company_id=1")" ] && return; api -X POST -o /dev/null -w "item $1: %{http_code}\n" -d "{\"name\":\"$1\",\"price\":$(( $2 * 100 )),\"description\":\"$3\",\"taxes\":[]}" "$CR/items"; }
+# item NAME PRICE DESCRIPTION [OLD-NAME]: skipped when the item exists under its name or a former name
+item() { [ -n "$(M "select id from items where (name='$1' or name='${4:-$1}') and company_id=1")" ] && return; api -X POST -o /dev/null -w "item $1: %{http_code}\n" -d "{\"name\":\"$1\",\"price\":$(( $2 * 100 )),\"description\":\"$3\",\"taxes\":[]}" "$CR/items"; }
 item "OPD Consultation"            20000 "General outpatient consultation"
 item "Specialist Consultation"     50000 "Specialist review"
 item "Antenatal Care Visit"        15000 "Routine ANC visit"
-item "Malaria RDT"                 10000 "Rapid diagnostic test"
+item "Rapid test for malaria (RDT)" 10000 "Rapid diagnostic test" "Malaria RDT"
 item "Blood Smear (Malaria)"       12000 "Microscopy"
 item "Complete Blood Count"        25000 "Full haemogram"
 item "Urinalysis"                  10000 "Dipstick and microscopy"

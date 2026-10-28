@@ -5,9 +5,12 @@ source "$(dirname "$0")/00-guard.sh" 2>/dev/null || source /tmp/00-guard.sh
 export DEBIAN_FRONTEND=noninteractive
 timedatectl set-timezone Africa/Kampala
 
+# tools the later scripts need, whether or not Docker is already installed
+for t in curl git jq openssl perl; do command -v $t >/dev/null || MISSING=1; done
+[ -n "${MISSING:-}" ] && { apt-get update -q; apt-get install -yq ca-certificates curl git jq openssl perl; }
+
 if ! command -v docker >/dev/null; then
   apt-get update -q
-  apt-get install -yq ca-certificates curl git jq
   install -m 0755 -d /etc/apt/keyrings
   curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
   chmod a+r /etc/apt/keyrings/docker.asc

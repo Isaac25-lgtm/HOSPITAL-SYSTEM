@@ -17,7 +17,14 @@ auth_ok superman "$NEW" || { echo "ABORT: cannot authenticate as superman"; exit
 
 USERS=$(curl -sk -u "superman:$NEW" "$API/user?v=custom:(uuid,username,systemId)&limit=100")
 uuid_of() { echo "$USERS" | jq -r --arg s "$1" '.results[] | select(.systemId==$s or .username==$s) | .uuid' | head -1; }
-setpw() { echo "$1: HTTP $(code -u "superman:$NEW" -H 'Content-Type: application/json' -d "{\"newPassword\":\"$2\"}" "$API/password/$(uuid_of "$1")")"; }
+# succeeds only when the API accepts the change AND the new password then signs in
+setpw() {
+  local u; u=$(uuid_of "$1"); [ -n "$u" ] || { echo "$1: not found"; return 1; }
+  local c; c=$(code -u "superman:$NEW" -H 'Content-Type: application/json' -d "{\"newPassword\":\"$2\"}" "$API/password/$u")
+  echo "$1: HTTP $c"
+  [ "${c:0:1}" = 2 ] || return 1
+  auth_ok "$(echo "$USERS" | jq -r --arg u "$u" '.results[] | select(.uuid==$u) | .username // .systemId')" "$2" || [ "$1" = admin ]
+}
 
 auth_ok admin "$NEW" && echo "admin: already hardened" || setpw admin "$NEW"
 
@@ -26,7 +33,11 @@ touch "$STOCK"; chmod 600 "$STOCK"
 for S in registration doctor "Lab Manager" "Lab System" "Reports User"; do
   [ -z "$(uuid_of "$S")" ] && continue
   KEY=$(echo "$S" | tr ' a-z' '_A-Z')
-  grep -q "^$KEY=" "$STOCK" && { echo "$S: already randomised"; continue; }
+  # a recorded password counts only if it really works (an earlier failed change is repaired here)
+  OLD=$(grep "^$KEY=" "$STOCK" | cut -d= -f2-)
+  UN=$(echo "$USERS" | jq -r --arg s "$S" '.results[] | select(.systemId==$s or .username==$s) | .username // .systemId' | head -1)
+  [ -n "$OLD" ] && auth_ok "$UN" "$OLD" && { echo "$S: already randomised"; continue; }
+  sed -i "/^$KEY=/d" "$STOCK"
   PW="Stk$(openssl rand -base64 30 | tr -dc 'A-Za-z0-9' | head -c 18)7"
   setpw "$S" "$PW" && echo "$KEY=$PW" >> "$STOCK"
 done
@@ -41,10 +52,12 @@ fi
 RP=$(grep '^REPORTS_USER=' "$STOCK" | cut -d= -f2-)
 ENVF=/opt/vipers/bahmni-docker/bahmni-lite/.env.vipers
 if [ -n "$RP" ] && ! grep -q "^REPORTS_SERVICE_PASSWORD=$RP\$" "$ENVF"; then
-  sed -i '/^REPORTS_SERVICE_PASSWORD=/d' "$ENVF"; echo "REPORTS_SERVICE_PASSWORD=$RP" >> "$ENVF"
+  sed -i '/^REPORTS_SERVICE_PASSWORD=/d' "$ENVF"; [ -n "$(tail -c1 "$ENVF")" ] && echo >> "$ENVF"; echo "REPORTS_SERVICE_PASSWORD=$RP" >> "$ENVF"
   vipers dc up -d reports >/dev/null 2>&1 && echo "reports service given the new reports-user password"
 fi
 
-auth_ok superman Admin123 && echo "WARNING: superman/Admin123 still works" || echo "check: superman/Admin123 rejected"
-auth_ok registration Admin123 && echo "WARNING: registration/Admin123 still works" || echo "check: registration/Admin123 rejected"
+FAILED=0
+auth_ok superman Admin123 && { echo "FAIL: superman/Admin123 still works"; FAILED=1; } || echo "check: superman/Admin123 rejected"
+auth_ok registration Admin123 && { echo "FAIL: registration/Admin123 still works"; FAILED=1; } || echo "check: registration/Admin123 rejected"
 echo "admin login (may stay locked up to 5 min after failed sync attempts):"; auth_ok admin "$NEW" && echo "  admin OK" || echo "  admin not yet accepted (lockout window)"
+exit $FAILED

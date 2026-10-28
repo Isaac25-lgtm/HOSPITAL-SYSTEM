@@ -31,6 +31,7 @@ services:
     volumes:
       - addons-data:/data
       - /opt/vipers/edge/addons/public:/app/public:ro
+      - /opt/vipers/scripts:/app/tenant:ro      # trial portal sends the current first-boot script to new servers
 
 volumes:
   caddy-data:

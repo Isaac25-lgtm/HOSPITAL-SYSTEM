@@ -2,6 +2,8 @@
 # Build /opt/vipers/bahmni-docker/bahmni-lite/.env.vipers from the release .env (left untouched).
 # Secrets are generated once into /opt/vipers/secrets/vipers.env (root-only) and never printed.
 source "$(dirname "$0")/00-guard.sh" 2>/dev/null || source /tmp/00-guard.sh
+SD="$(cd "$(dirname "$0")" && pwd)"   # this script's folder, resolved before any cd
+umask 077                              # secret-bearing files are private from the moment they are created
 
 PUBLIC_IP="${PUBLIC_IP:-34.35.115.102}"
 SSLIP="$(echo "$PUBLIC_IP" | tr . -).sslip.io"
@@ -32,13 +34,15 @@ fi
 set -a; source "$SECRETS"; set +a
 
 cd "$LITE"
-cp .env .env.vipers
+# build into a private temporary file and replace .env.vipers in one step at the end
+OUT=.env.vipers.tmp; rm -f "$OUT"; cp .env "$OUT"; chmod 600 "$OUT"
 setv() {  # setv KEY VALUE  -> replace KEY=... line (or append)
   local k="$1" v="$2"
-  if grep -q "^$k=" .env.vipers; then
-    KEY="$k" VAL="$v" perl -i -pe 's/^\Q$ENV{KEY}\E=.*$/$ENV{KEY}=$ENV{VAL}/' .env.vipers
+  if grep -q "^$k=" "$OUT"; then
+    KEY="$k" VAL="$v" perl -i -pe 's/^\Q$ENV{KEY}\E=.*$/$ENV{KEY}=$ENV{VAL}/' "$OUT"
   else
-    echo "$k=$v" >> .env.vipers
+    [ -n "$(tail -c1 "$OUT")" ] && echo >> "$OUT"   # the release .env has no final newline
+    echo "$k=$v" >> "$OUT"
   fi
 }
 setv COMPOSE_PROFILES bahmni-lite
@@ -65,9 +69,12 @@ setv CRATER_COUNTRY_ID 227                          # Uganda
 setv CRATER_APP_URL "https://$BILLING_HOST"
 setv CRATER_SANCTUM_STATEFUL_DOMAINS "billing.motionimprints.tech,billing.$SSLIP"
 setv CRATER_SESSION_DOMAIN null   # host-only cookie: works on both the real and the fallback hostname
-chmod 600 .env.vipers
+# the reports service password is created by 04-harden.sh; keep it on every regeneration (DNS switch, trial first boot)
+RP=$(grep '^REPORTS_USER=' /opt/vipers/secrets/stock-users.env 2>/dev/null | cut -d= -f2-)
+[ -n "$RP" ] && setv REPORTS_SERVICE_PASSWORD "$RP"
+mv -f "$OUT" .env.vipers
 
-OVR_SRC="$(dirname "$0")/docker-compose.vipers.yml"; [ -f "$OVR_SRC" ] || OVR_SRC=/tmp/docker-compose.vipers.yml
+OVR_SRC="$SD/docker-compose.vipers.yml"; [ -f "$OVR_SRC" ] || OVR_SRC=/tmp/docker-compose.vipers.yml
 [ -f "$OVR_SRC" ] && cp "$OVR_SRC" "$LITE/docker-compose.vipers.yml"
 
 echo "--- non-secret differences vs release .env:"

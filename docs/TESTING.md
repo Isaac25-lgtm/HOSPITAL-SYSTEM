@@ -18,8 +18,28 @@ Results: `/opt/vipers/tests/out/results/*.json` and `run.log`; screenshots in `/
 
 Last full run (28 Oct 2026): **168 / 168 checks passed** (acceptance 114, phone 6, QA fixes 14, sign-in 31, loading 3).
 
-## Trial portal
+`run-all.sh` exits non-zero when any suite fails or writes no results (a crashed suite is a failure, not a pass).
 
-End-to-end: sign up a test hospital through the API, wait for the server to report ready, sign in with the hospital
-account, check every module tile and the demo accounts being retired, then delete the server. Test credentials are
-generated on the server (`/opt/vipers/secrets/trial-qa.env`, root-only).
+## Unit tests (no browser, no cloud, no real AI)
+
+Run in the plain Node 22 image on the server:
+
+```
+docker run --rm -v /opt/vipers/edge/addons:/app:ro -v /opt/vipers/tests:/t:ro node:22-alpine node /t/unit-ai.js
+docker run --rm -v /opt/vipers/edge/addons:/app:ro -v /opt/vipers/tests:/t:ro node:22-alpine node /t/unit-trial.js
+```
+
+| Test | What it proves |
+|---|---|
+| `unit-ai.js` | The real AI proxy against a fake provider that records every outbound request: malformed bodies get 400 and never stop the process; a Unicode gate code does not crash; a refused patient question never reaches the provider, now or later as history; patient names in screen labels/title are not forwarded; screen labels are kept out of the system instructions; no shared cache for follow-ups or other roles; client-supplied page/role text is replaced. |
+| `unit-trial.js` | The real provisioner against a fake metadata server and Compute API: simultaneous sign-ups (same / different usernames) respect uniqueness and the cap; servers are labelled for reconciliation and receive the current add-on code; refused deletes keep their slot and are retried; deletion is confirmed; an unknown labelled server is adopted and deleted at expiry; hospital self-delete refuses a wrong token, accepts the right one, never stores the token. |
+
+## Trial portal, end to end
+
+1. Sign up a test hospital through the API (credentials generated on the server, `/opt/vipers/secrets/trial-qa.env`,
+   root-only) and wait for `ready`.
+2. Server-side checks: hospital login works; public demo passwords and default passwords are refused; password and delete
+   token removed from the instance metadata; billing reachable.
+3. `tests/wf-trial-delete.js BASE=<trial url> HUSER=… HPASS=… [DELETE=1]`: hospital sign-in notice, no role cards,
+   TRIAL label, **Delete hospital space** button, confirmation dialog (wrong username keeps it disabled), and with
+   `DELETE=1` the deletion itself; then confirm the server disappears from the cloud.
