@@ -82,7 +82,7 @@ async function signup(body) {
       networkInterfaces: [{ network: s.network, accessConfigs: [{ type: 'ONE_TO_ONE_NAT', name: 'External NAT', networkTier: 'PREMIUM' }] }],
       serviceAccounts: [{ email: s.sa, scopes: ['https://www.googleapis.com/auth/cloud-platform'] }],
       metadata: { items: [
-        { key: 'startup-script', value: '#!/bin/bash\nbash /opt/vipers/scripts/tenant-firstboot.sh' },
+        { key: 'startup-script', value: '#!/bin/bash\nVIPERS_EXPECTED_HOST="$(hostname)" bash /opt/vipers/scripts/tenant-firstboot.sh' },
         { key: 'vipers-hospital', value: v.hospital }, { key: 'vipers-username', value: v.username },
         { key: 'vipers-password', value: v.password }, { key: 'vipers-expires', value: expires },
         { key: 'vipers-billing-email', value: billingEmail }] },

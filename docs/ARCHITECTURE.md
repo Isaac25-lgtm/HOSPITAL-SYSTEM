@@ -24,14 +24,14 @@ Loaded on every page of every module (Bahmni 2.0 React screens, older AngularJS 
 - shows one-click **role cards** on the demo sign-in pages (fills and submits the stock form; ends any leftover session
   first because Bahmni hangs when signing in over an existing session);
 - in **hospital mode** (`/vipers-assets/site.json` present) hides the cards, shows the trial notice and the hospital's sign-in;
-- provides the "?" help panel, first-login tour, Ask Vipers AI panel, evening mode, loading hint;
+- provides the "?" help panel, first-login tour, Ask Vipers AI panel, the evening-mode switch in the top bar, loading hint;
 - patches upstream bugs: In-Patient bed pop-up request (stray comma → HTTP 400), ward Diagnoses panel (reads FHIR
   `Condition?category=encounter-diagnosis` because the ward screen only reads legacy obs diagnoses), Cancel button styling,
   empty language selector.
 
 `vipers.css` holds the theme: Home tiles per module colour (`data-testid`), sign-in cards, older-screen classes
 (`.opd-header-wrapper`, `.section-grid`, `.tab-item`, `.confirm`, `li.active-patient`, `.bed-assignment li.col`), Carbon
-v11/v10 dropdown readability, phone layouts and evening mode (`html.vp-dark`).
+v11/v10 dropdown readability, phone layouts, the photo background on sign-in, Home and the trial portal (`nature-bg.jpg`, Unsplash License, credited on the About page) and evening mode (`html.vp-dark`).
 
 ## Configuration layering
 

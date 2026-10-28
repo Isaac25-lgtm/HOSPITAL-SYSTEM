@@ -4,6 +4,7 @@
 # the trial settings. Inputs: instance metadata vipers-hospital, vipers-username, vipers-password,
 # vipers-expires, vipers-billing-email (the portal removes vipers-password once the server is ready).
 set -u
+export VIPERS_EXPECTED_HOST="$(hostname)"   # the kit scripts (00-guard.sh) refuse to run on any other host name
 LOG=/var/log/vipers-tenant.log; exec >>"$LOG" 2>&1
 echo "== $(date '+%F %T %Z') tenant boot"
 md() { curl -sf -H 'Metadata-Flavor: Google' "http://metadata.google.internal/computeMetadata/v1/instance/$1"; }
@@ -25,9 +26,10 @@ if [ -z "$HOSP" ] || [ -z "$USERN" ] || [ -z "$PASS" ] || [ -z "$IP" ]; then ech
 cd /opt/vipers/bahmni-docker/bahmni-lite
 for i in $(seq 1 60); do docker info >/dev/null 2>&1 && break; sleep 5; done
 # this server's own hostnames (secrets are kept); DOMAIN is unset so only the sslip.io names are served
-PUBLIC_IP=$IP bash $S/02-configure.sh >/dev/null 2>&1
+# a failure here stops before 'configured', so the next boot retries (output goes to the log)
+PUBLIC_IP=$IP bash $S/02-configure.sh || { echo "02-configure failed"; exit 1; }
 vipers up >/dev/null 2>&1
-PUBLIC_IP=$IP DOMAIN=invalid.local bash $S/03-edge.sh >/dev/null 2>&1
+PUBLIC_IP=$IP DOMAIN=invalid.local bash $S/03-edge.sh || { echo "03-edge failed"; exit 1; }
 vipers dc up -d --force-recreate crater-php crater-nginx >/dev/null 2>&1
 
 for i in $(seq 1 120); do

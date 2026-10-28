@@ -5,7 +5,7 @@ const ok = (step, pass, note = '') => { R.push({ step, pass, note }); console.lo
 const VIEWPORTS = [['desktop-1920', 1920, 1080], ['laptop-1366', 1366, 768], ['tablet-820', 820, 1180], ['mobile-390', 390, 844]];
 
 const check = page => page.evaluate(() => {
-  const ours = [...document.querySelectorAll('#vipers-root .vp-fabs button, #vipers-root .vp-badge')].map(e => e.getBoundingClientRect()).filter(r => r.width);
+  const ours = [...document.querySelectorAll('#vipers-root .vp-fabs button, #vipers-root .vp-badge, #vipers-root .vp-topswitch')].map(e => e.getBoundingClientRect()).filter(r => r.width);
   const theirs = [...document.querySelectorAll('button, input, select, textarea, a')].filter(e => e.offsetParent && !e.closest('#vipers-root') && e.getBoundingClientRect().width > 0 && getComputedStyle(e).visibility !== 'hidden' && !(e.closest('.cds--modal') && !e.closest('.cds--modal.is-visible')))
     .map(e => ({ r: e.getBoundingClientRect(), t: (e.innerText || e.placeholder || e.getAttribute('aria-label') || e.tagName).trim().slice(0, 30) }));
   const hit = [];

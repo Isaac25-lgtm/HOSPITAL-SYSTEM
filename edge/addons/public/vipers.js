@@ -188,8 +188,10 @@
     aiPanel = buildAI();
 
     root.appendChild(badge);
-    var themeBtn = el('button', { class: 'vp-fab vp-theme-btn', type: 'button', onclick: toggleTheme });
-    root.appendChild(el('div', { class: 'vp-fabs' }, [themeBtn, helpBtn, aiBtn]));
+    // evening mode switch sits in the top bar of every screen (fixed, so it works on every module's header)
+    var themeBtn = el('button', { class: 'vp-topswitch vp-theme-btn', type: 'button', role: 'switch', onclick: toggleTheme });
+    root.appendChild(themeBtn);
+    root.appendChild(el('div', { class: 'vp-fabs' }, [helpBtn, aiBtn]));
     paintThemeBtn(themeBtn);
     root.appendChild(helpPanel);
     root.appendChild(aiPanel);
@@ -521,8 +523,10 @@
   function applyTheme() { document.documentElement.classList.toggle('vp-dark', store.get('theme') === 'evening'); }
   function paintThemeBtn(b) {
     var dark = store.get('theme') === 'evening';
-    b.innerHTML = dark ? SUN : MOON;
-    b.setAttribute('aria-label', dark ? 'Switch to day mode' : 'Switch to evening mode');
+    b.innerHTML = '<span class="vp-ts-track"><span class="vp-ts-ico vp-ts-sun">' + SUN + '</span><span class="vp-ts-ico vp-ts-moon">' + MOON +
+      '</span><span class="vp-ts-knob"></span></span><span class="vp-ts-label">' + (dark ? 'Evening' : 'Day') + '</span>';
+    b.setAttribute('aria-checked', dark ? 'true' : 'false');
+    b.setAttribute('aria-label', 'Evening mode');
     b.setAttribute('title', dark ? 'Day mode' : 'Evening mode');
   }
   function toggleTheme() {

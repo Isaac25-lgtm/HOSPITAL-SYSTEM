@@ -1,7 +1,7 @@
 /* VIPERS HOSPITAL trial portal (open an account / log in) - same look as the redesigned system */
 * { box-sizing: border-box; }
 body { margin: 0; min-height: 100vh; font: 15px/1.5 "IBM Plex Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f2a37;
-  background: #eef6f3 url(/vipers-assets/nature-bg.svg) center bottom / cover no-repeat fixed; }
+  background: linear-gradient(180deg, rgba(246,250,250,.30) 0%, rgba(246,250,250,0) 45%), #cfe0ea url(/vipers-assets/nature-bg.jpg) center 62% / cover no-repeat fixed; }
 .tp { max-width: 560px; margin: 0 auto; padding: 40px 16px 48px; text-align: center; }
 .tp-logo { width: 210px; height: auto; margin-bottom: 18px; }
 h1 { font-size: 26px; line-height: 1.25; margin: 0 0 10px; }

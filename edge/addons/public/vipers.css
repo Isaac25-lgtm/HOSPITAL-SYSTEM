@@ -237,7 +237,7 @@ html:not(.vp-ready)::after { content: "Loading VIPERS HOSPITAL\2026"; position: 
            radial-gradient(760px 520px at 100% 100%, rgba(15,118,110,.11), transparent 70%),
            radial-gradient(520px 320px at 92% 8%, rgba(37,99,235,.05), transparent 70%),
            linear-gradient(180deg, #f6fafa 0%, #edf5f4 100%);
-  --vt-nature: #eef6f3 url(/vipers-assets/nature-bg.svg) center bottom / cover no-repeat; }
+  --vt-nature: linear-gradient(180deg, rgba(246,250,250,.30) 0%, rgba(246,250,250,0) 45%), #cfe0ea url(/vipers-assets/nature-bg.jpg) center 62% / cover no-repeat; }
 
 /* --- Home (2.0): soft background, faint cross and dots --- */
 main[class*="HomePage_homePageBody"] { background: var(--vt-nature) !important; min-height: calc(100vh - 48px); position: relative; overflow: hidden; }
@@ -284,7 +284,7 @@ a[data-testid$="adt"]                    { --c: #b45309; --t: #fdeccf; }
   a[class*="AppTile_tile"] [class*="AppTile_bottom"] > span { width: 56px; height: 56px; border-radius: 15px; }
 }
 
-/* natural background replaces the faint cross / dots decorations */
+/* the photo background replaces the faint cross / dots decorations */
 main[class*="HomePage_homePageBody"]::before, main[class*="HomePage_homePageBody"]::after { content: none !important; }
 /* --- 2.0 header --- */
 html:not(.vp-billing) .cds--header { background: linear-gradient(90deg, #0d6b63 0%, #0f766e 45%, #0b5f58 100%) !important; border-bottom: 0 !important; box-shadow: 0 2px 12px rgba(11,95,88,.22); }
@@ -429,13 +429,28 @@ html.vp-hospital #vipers-root .vp-badge-tag { background: #fdeccf; color: #92400
 
 /* --- evening mode: one switch for every module; photos, logos, bed icons and documents keep true colours --- */
 html.vp-dark { filter: invert(.9) hue-rotate(180deg); background: #fff; }
-/* natural background would invert into odd colours: plain soft background in evening mode */
+/* the photo background would invert into odd colours: plain soft background in evening mode */
 html.vp-dark.vp-page-login body, html.vp-dark main[class*="HomePage_homePageBody"] { background: var(--vt-bg) !important; }
 html.vp-dark img, html.vp-dark video, html.vp-dark picture, html.vp-dark canvas, html.vp-dark iframe, html.vp-dark object, html.vp-dark embed,
 html.vp-dark .bed-assignment li.col, html.vp-dark [style*="background-image"] { filter: invert(1) hue-rotate(180deg); }
-#vipers-root .vp-theme-btn { width: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+/* evening mode switch in the top bar (centre of the header; top-right on sign-in pages, under the bar on phones) */
+#vipers-root .vp-topswitch { position: fixed; top: 9px; left: 50%; transform: translateX(-50%); z-index: 2147483001; display: inline-flex; align-items: center; gap: 8px;
+  height: 30px; padding: 0 12px 0 3px; border: 1px solid rgba(255,255,255,.45); border-radius: 999px; background: rgba(255,255,255,.16); color: #fff;
+  font: 600 12.5px/1 "IBM Plex Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; cursor: pointer; backdrop-filter: blur(6px); }
+#vipers-root .vp-topswitch:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+#vipers-root .vp-ts-track { position: relative; width: 46px; height: 24px; border-radius: 999px; background: #e7f3f1; display: inline-flex; align-items: center; justify-content: space-between; padding: 0 5px; box-sizing: border-box; }
+#vipers-root .vp-ts-ico { display: inline-flex; color: #0f766e; z-index: 1; }
+#vipers-root .vp-ts-ico svg { width: 13px; height: 13px; }
+#vipers-root .vp-ts-knob { position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: left .2s ease; }
+#vipers-root .vp-topswitch[aria-checked="true"] .vp-ts-track { background: #1e293b; }
+#vipers-root .vp-topswitch[aria-checked="true"] .vp-ts-ico { color: #fcd34d; }
+#vipers-root .vp-topswitch[aria-checked="true"] .vp-ts-knob { left: 24px; background: #e2e8f0; }
+html.vp-page-login #vipers-root .vp-topswitch, html.vp-page-billing-login #vipers-root .vp-topswitch, html:not(:has(.cds--header, .opd-header-wrapper, .reg-header, .vp-billing)) #vipers-root .vp-topswitch {
+  left: auto; right: 16px; top: 14px; transform: none; color: #0f2a37; background: #fff; border-color: #bcd3cf; box-shadow: 0 2px 8px rgba(15,42,55,.08); }
+@media (max-width: 700px) { #vipers-root .vp-topswitch { top: 56px; left: auto; right: 10px; transform: none; color: #0f2a37; background: #fff; border-color: #bcd3cf; }
+  #vipers-root .vp-ts-label { display: none; } #vipers-root .vp-topswitch { padding-right: 3px; } }
 /* evening mode: keep teal header bars dark teal (flip them back), and let the logo invert so its text turns light */
 html.vp-dark .reg-header, html.vp-dark .cds--header, html.vp-dark .opd-header-wrapper, html.vp-dark .section-title,
-html.vp-dark .tab-item.tab-selected > a, html.vp-dark #vipers-root .vp-ai-btn { filter: invert(1) hue-rotate(180deg); }
+html.vp-dark .tab-item.tab-selected > a, html.vp-dark #vipers-root .vp-ai-btn, html.vp-dark #vipers-root .vp-topswitch { filter: invert(1) hue-rotate(180deg); }
 html.vp-dark img.vipers-logo-img, html.vp-dark .clint-logo-wrapper img, html.vp-dark #vp-brand img { filter: none; }
 html.vp-dark .cds--header img, html.vp-dark .opd-header-wrapper img { filter: none; }
