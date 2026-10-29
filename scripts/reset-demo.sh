@@ -24,10 +24,11 @@ echo "backup verified; stopping application services (databases stay up)"
 vipers dc stop openmrs crater-php crater-atomfeed reports template-service caddy >/dev/null
 gunzip -c "$D/openmrs.sql.gz" | docker exec -i -e MYSQL_PWD="$MYSQL_ROOT_PASSWORD" bahmni-lite-openmrsdb-1 mysql -uroot openmrs
 gunzip -c "$D/crater.sql.gz" | docker exec -i -e MYSQL_PWD="$CRATER_DB_PASSWORD" bahmni-lite-craterdb-1 mysql -ucrater crater
+# (the atomfeed database's root user uses MYSQL_ROOT_PASSWORD; CRATER_ATOMFEED_DB_ROOT_PASSWORD is not used by it - checked)
 gunzip -c "$D/crater_atomfeed.sql.gz" | docker exec -i -e MYSQL_PWD="$MYSQL_ROOT_PASSWORD" bahmni-lite-crater-atomfeed-db-1 mysql -uroot crater_atomfeed
 for f in "$D"/*.tgz; do
   [ -e "$f" ] || continue; v=$(basename "$f" .tgz)
-  docker run --rm -v bahmni-lite_$v:/v -v "$D":/b:ro alpine:3 sh -c "rm -rf /v/* && tar -xzf /b/$v.tgz -C /v"
+  docker run --rm -v bahmni-lite_$v:/v -v "$D":/b:ro alpine:3 sh -c "find /v -mindepth 1 -delete && tar -xzf /b/$v.tgz -C /v"
 done
 trap - ERR
 vipers up >/dev/null

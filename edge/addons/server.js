@@ -360,6 +360,9 @@ http.createServer(async (req, res) => {
     }
     if (p === '/vipers-ai/api/chat' && req.method === 'POST') return await chat(req, res);
     if (p === '/vipers-ai/api/status') return send(res, 200, { ai: AI_ENABLED, freeText: AI_ALLOW_FREE_TEXT, model: AI_MODEL, today: usedToday(), dailyLimit: AI_DAILY_TOKENS, total: usedTotal(), totalLimit: AI_TOTAL_TOKENS });
+    // site.json exists only on hospital/production servers; elsewhere answer "{}" (no special mode) instead of a 404,
+    // which browsers log as an error and which, over HTTP/3, test browsers never reported as finished
+    if (p === '/vipers-assets/site.json' && !fs.existsSync(path.join(PUBLIC_DIR, 'site.json'))) return send(res, 200, {});
     if (p.startsWith('/vipers-assets/')) return serveStatic(req, res, p.slice('/vipers-assets/'.length));
     if (p === '/healthz') return send(res, 200, 'ok', 'text/plain');
     send(res, 404, { error: 'not found' });

@@ -110,7 +110,6 @@ async function instance(t) {
 }
 
 // ---------- validation ----------
-const slugify = s => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 20) || 'hospital';
 function validate(b) {
   const hospital = String(b.hospital || '').replace(/\s+/g, ' ').trim();
   const username = String(b.username || '').trim().toLowerCase();
@@ -159,10 +158,11 @@ async function signup(body) {
   // checks and reservation happen together, before any await, so simultaneous requests cannot all pass
   if (holding().some(t => t.username === v.username)) return { status: 409, body: { error: 'That username is already in use. Please choose another, or use "Log in to an existing account".' } };
   if (holding().length >= TRIAL_MAX) return { status: 503, body: { error: `All ${TRIAL_MAX} trial spaces are in use right now. Please try again in a day or two.` } };
-  const id = crypto.randomBytes(6).toString('hex'), slug = slugify(v.hospital);
+  const id = crypto.randomBytes(6).toString('hex');
   // lets the hospital delete its own space later; only the hash is kept here
   const deleteToken = crypto.randomBytes(24).toString('hex');
-  const t = { id, hospital: v.hospital, username: v.username, slug, vm: `vh-${slug}-${id.slice(0, 4)}`.slice(0, 60), zone: placement.zone, submitted: false,
+  // opaque server name: the hospital name never appears in cloud resource names, the registry or logs
+  const t = { id, hospital: v.hospital, username: v.username, vm: `vh-trial-${id}`, zone: placement.zone, submitted: false,
     created: new Date(now).toISOString(), expires, billingEmail: `${v.username}@vipers.trial`, status: 'creating',
     deleteHash: crypto.createHash('sha256').update(deleteToken).digest('hex') };
   trials.push(t);
@@ -237,6 +237,7 @@ async function refresh(t) {
   if (t.status === 'ready' && !t.scrubbed) t.status = 'creating';
   try {
     const inst = await instance(t);
+    if (superseded()) return t;              // a deletion happened while waiting: never overwrite it (also for 404s)
     if (!inst) {
       // just after creation the server may not be listed yet
       if (Date.now() - Date.parse(t.created) > 5 * 60e3) { t.status = 'failed'; t.error = 'instance missing'; save(); }
@@ -296,6 +297,18 @@ async function reconcile() {
   const list = await gce('GET', `/zones/${s.zone}/instances?filter=${encodeURIComponent('labels.vipers-trial=1')}`);
   for (const inst of list.items || []) {
     if (trials.some(t => t.vm === inst.name && HOLDS_SLOT.includes(t.status))) continue;
+    const known = trials.find(t => t.vm === inst.name);
+    if (known) {
+      // e.g. an uncertain create or a 404 marked it failed, but the server exists: keep ONE record, so status/polling work
+      const mdv0 = k => (((inst.metadata && inst.metadata.items) || []).find(i => i.key === k) || {}).value || '';
+      // a record whose deletion was already confirmed is deleted again, never brought back to life
+      if (known.status === 'deleted') { known.status = 'deleting'; known.deleteRequested = new Date(0).toISOString(); }
+      else { known.status = 'creating'; delete known.error; }
+      known.zone = s.zone; known.adopted = true; known.gen = (known.gen || 0) + 1;
+      if (known.status !== 'deleting' && !known.deleteHash && /^[a-f0-9]{64}$/.test(mdv0('vipers-delete-hash'))) known.deleteHash = mdv0('vipers-delete-hash');
+      console.error('trial record revived from the cloud:', inst.name);
+      continue;
+    }
     const l = inst.labels || {}, md = (inst.metadata && inst.metadata.items) || [];
     const mdv = k => (md.find(i => i.key === k) || {}).value || '';
     const created = inst.creationTimestamp || new Date().toISOString();

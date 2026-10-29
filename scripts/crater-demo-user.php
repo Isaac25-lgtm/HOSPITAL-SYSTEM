@@ -4,6 +4,8 @@
 require '/var/www/vendor/autoload.php';
 $app = require '/var/www/bootstrap/app.php';
 $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+// only the demo setup and the demo guard run this (both refuse on production and trial servers first)
+if (getenv('VIPERS_DEMO_BILLING') !== '1') { fwrite(STDERR, "refusing: demo billing helper (set VIPERS_DEMO_BILLING=1 from a demo-only caller)\n"); exit(1); }
 
 use Crater\Models\User;
 use Illuminate\Support\Facades\Hash;

@@ -112,3 +112,29 @@ setup (IPv4/IPv6); billing sync 0 authentication errors; trial AI allowance 50 0
 Reboot of the configured trial: seal re-applied at boot (3 hooks), "already configured" path lifted it (0 hooks), site
 reachable from outside (200). Delete account in a browser 8/8; the server disappeared from the cloud; the portal answers
 only `{"status":"deleted"}`; the registry record keeps no hospital, user, e-mail, IP or verifier; no names in the portal log.
+
+### Regression after the 29 Oct review fixes (29 Oct 2026, 10:35-11:30)
+
+Fixes for `CODE-REVIEW-2026-10-29.md` (R01-R09) deployed on the demo server, add-on image rebuilt. Response:
+`CODE-REVIEW-2026-10-29-RESPONSE.md`.
+
+| Suite | Result |
+|---|---|
+| run-all (admin, appointments/documents, billing, doctor, help/AI, In-Patient, lab, performance, reception, ux, walkthrough) | all pass after the fixes below (In-Patient 6/6, ux 28/28 on the repeat) |
+| wf-perf | 7/7 (sign-in 46 s → normal; it failed before this round) |
+| wf-billing (standalone, with the test patient's surname) | 6/6 |
+| wf-mobile (phone `MOBILE=1` and desktop) | 6/6 and 6/6 |
+| wf-reception | 6/6 |
+| wf-qa-fixes / wf-cards / wf-loading / wf-spin-watchdog / wf-spin-audit | 14/14, 18/18, 3/3, 4/4, 82/82 |
+| Unit: unit-trial / unit-trial-admission / unit-trial-recovery (new) / unit-ai / unit-overlay / unit-privacy / unit-ops.py | 25/25, 4/4, 5/5, 17/17, pass, pass, 8/8 |
+
+Defects found by this regression and fixed:
+- **Phones: the Login button of the manual sign-in form sat under the badge and ?/AI buttons.** A later redesign rule
+  reset the 170 px room under the sign-in box to 40 px, and even 170 px did not help: the box overflows a one-screen-high
+  wrapper, and overflow ignores margins. Now the 40 px applies to wide screens only, and on phones the wrapper grows with
+  the box. Probe at 390x844: after scrolling, the element at the button's centre is the button (was the floating bar).
+- Test timing exposed by the faster sign-in: the Ward Nurse tile check now waits for the Home tiles; the registration
+  helper reopens the gender list if it opens before its options have loaded. Standalone wf-billing needs `LAST=`.
+
+Afterwards: daily trial cap back to 6, test patients removed, new reset baseline (`baseline.current`, verified against its
+manifest and checksums), obsolete image `vipers-hospital-golden-v2` deleted (v1 and v3 kept).

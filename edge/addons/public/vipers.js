@@ -892,11 +892,9 @@
   function start() {
     // one-time repair per browser (bump the key to repeat): 25 Oct warm-up bug cached a damaged appointment.js;
     // 28 Oct: config files had no Cache-Control, so browsers kept old Home tiles/dashboards;
-    // clear this site's HTTP cache once per browser (server answers with Clear-Site-Data: "cache")
-    if (!store.get('cachefix-2')) {
-      fetch('/vipers-gate/reset-cache', { credentials: 'same-origin', cache: 'no-store' })
-        .then(function () { store.set('cachefix-2', '1'); }).catch(function () {});
-    }
+    // (A one-time Clear-Site-Data cache wipe used to run here on a browser's first visit. While Chrome wiped the cache,
+    //  other requests to the site stalled - including site.json, so the sign-in cards took up to ~45 s to appear on a
+    //  new browser. Cache freshness is now handled by Cache-Control on configuration and by the edge for cached pages.)
     if (BILLING) document.documentElement.classList.add('vp-billing'); // teal theme for Crater
     applyTheme();
     build();

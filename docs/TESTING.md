@@ -27,12 +27,14 @@ Run in the plain Node 22 image on the server:
 ```
 docker run --rm -v /opt/vipers/edge/addons:/app:ro -v /opt/vipers/tests:/t:ro node:22-alpine node /t/unit-ai.js
 docker run --rm -v /opt/vipers/edge/addons:/app:ro -v /opt/vipers/tests:/t:ro node:22-alpine node /t/unit-trial.js
+docker run --rm -v /opt/vipers/edge/addons:/app:ro -v /opt/vipers/tests:/t:ro node:22-alpine node /t/unit-trial-recovery.js
 ```
 
 | Test | What it proves |
 |---|---|
 | `unit-ai.js` | The real AI proxy against a fake provider that records every outbound request: malformed bodies get 400 and never stop the process; a Unicode gate code does not crash; a refused patient question never reaches the provider, now or later as history; patient names in screen labels/title are not forwarded; screen labels are kept out of the system instructions; no shared cache for follow-ups or other roles; client-supplied page/role text is replaced. |
 | `unit-trial.js` | The real provisioner against a fake metadata server and Compute API: simultaneous sign-ups (same / different usernames) respect uniqueness and the cap; servers are labelled for reconciliation and receive the current add-on code; refused deletes keep their slot and are retried; deletion is confirmed; an unknown labelled server is adopted and deleted at expiry; hospital self-delete refuses a wrong token, accepts the right one, never stores the token. |
+| `unit-trial-recovery.js` | Recovery paths: a refresh still waiting on the cloud when the trial is deleted never overwrites `deleted` (also for a 404); a server found again for a failed record revives that one record and the status answer follows it; a server found again after a confirmed deletion is deleted again; new server names carry no hospital name. |
 
 ## Trial portal, end to end
 

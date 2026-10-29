@@ -32,8 +32,15 @@ async function register(page, p) {
   await page.fill('#first-name', p.first);
   if (p.middle) await page.fill('#middle-name', p.middle);
   await page.fill('#last-name', p.last);
-  await page.locator('button[id$="-toggle-button"]', { hasText: 'Select' }).first().click();
-  await page.locator('[role=option]', { hasText: p.gender }).first().click();
+  // the gender list can arrive after the form shows; if the menu opens empty, close and reopen it (as a person would)
+  const genderToggle = page.locator('button[id$="-toggle-button"]', { hasText: 'Select' }).first();
+  for (let attempt = 1; ; attempt++) {
+    await genderToggle.click();
+    const opt = page.locator('[role=option]', { hasText: p.gender }).first();
+    if (await opt.waitFor({ state: 'visible', timeout: 10000 }).then(() => true).catch(() => false)) { await opt.click(); break; }
+    if (attempt === 3) throw new Error('gender options never appeared');
+    await page.keyboard.press('Escape'); await page.waitForTimeout(1500);
+  }
   if (p.ageMonths !== undefined) { await page.fill('#age-years', String(p.age || 0)); await page.fill('#age-months', String(p.ageMonths)); }
   else await page.fill('#age-years', String(p.age));
   await page.click('button:has-text("Address information")');

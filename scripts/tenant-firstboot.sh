@@ -62,7 +62,9 @@ if [ -f $T/configured ]; then
     echo "address changed to $IP: reconfiguring hostnames"
     PUBLIC_IP=$IP bash $S/02-configure.sh
     (cd $LITE && vipers up >/dev/null 2>&1)
-    PUBLIC_IP=$IP DOMAIN=invalid.local bash $S/03-edge.sh
+    AI_ALLOW_FREE_TEXT="$(md attributes/vipers-ai-free-text || echo false)" \
+    AI_DAILY_TOKEN_LIMIT="$(md attributes/vipers-ai-daily-limit || echo 50000)" AI_TOTAL_TOKEN_LIMIT="$(md attributes/vipers-ai-total-limit || echo 250000)" \
+      PUBLIC_IP=$IP DOMAIN=invalid.local bash $S/03-edge.sh
     echo "$IP" > $T/ip
   fi
   # a crash between committing and publishing: publish the committed state now

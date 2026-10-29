@@ -29,6 +29,7 @@ chmod 700 "$W"
 dump() { docker exec -e MYSQL_PWD="$MYSQL_ROOT_PASSWORD" "$1" mysqldump -uroot --single-transaction --routines --triggers "$2" | gzip > "$W/$2.sql.gz"; }
 dump bahmni-lite-openmrsdb-1 openmrs
 docker exec -e MYSQL_PWD="$CRATER_DB_PASSWORD" bahmni-lite-craterdb-1 mysqldump -ucrater --single-transaction --no-tablespaces crater | gzip > "$W/crater.sql.gz"
+# (the atomfeed database's root user uses MYSQL_ROOT_PASSWORD, not CRATER_ATOMFEED_DB_ROOT_PASSWORD - checked on the server)
 docker exec -e MYSQL_PWD="$MYSQL_ROOT_PASSWORD" bahmni-lite-crater-atomfeed-db-1 mysqldump -uroot --single-transaction crater_atomfeed | gzip > "$W/crater_atomfeed.sql.gz"
 VOLS="bahmni-document-images bahmni-patient-images bahmni-lab-results bahmni-uploaded-files crater-app-data bahmni-clinical-forms"
 for v in bahmni-forms; do docker volume inspect bahmni-lite_$v >/dev/null 2>&1 && VOLS="$VOLS $v"; done

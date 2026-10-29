@@ -1,6 +1,9 @@
 #!/bin/bash
 # Configure Crater (billing) for VIPERS HOSPITAL: UGX, Kampala time, logo, cashier role + demo user, service price list.
 source "$(dirname "$0")/00-guard.sh" 2>/dev/null || source /tmp/00-guard.sh
+# demo billing setup (public demo cashier, fictional company details) is refused on production and trial servers
+[ "$(cat "${VIPERS_PROFILE_FILE:-/opt/vipers/profile}" 2>/dev/null)" = production ] && { echo "refusing: production server"; exit 1; }
+[ -f /opt/vipers/tenant/is-tenant ] && { echo "refusing: hospital trial server"; exit 1; }
 set +e
 source /opt/vipers/secrets/vipers.env
 M() { docker exec -e MYSQL_PWD="$CRATER_DB_PASSWORD" bahmni-lite-craterdb-1 mysql -ucrater crater -N -e "$1" 2>&1 | grep -v Warning; }
@@ -74,7 +77,7 @@ fi
 # 6. demo.cashier user (Crater signs in with an e-mail address)
 PHP_SRC="$(dirname "$0")/crater-demo-user.php"; [ -f "$PHP_SRC" ] || PHP_SRC=/tmp/crater-demo-user.php
 docker cp "$PHP_SRC" bahmni-lite-crater-php-1:/tmp/crater-demo-user.php
-docker exec bahmni-lite-crater-php-1 php /tmp/crater-demo-user.php 2>&1 | grep -v -i deprecat
+docker exec -e VIPERS_DEMO_BILLING=1 bahmni-lite-crater-php-1 php /tmp/crater-demo-user.php 2>&1 | grep -v -i deprecat
 echo "cashier login: $(curl -sk -H 'Accept: application/json' -H 'Content-Type: application/json' -d '{"username":"demo.cashier@vipers.demo","password":"everton","device_name":"check"}' "$CR/auth/login" | jq -r 'if .token then "OK" else (.message // .) end')"
 
 # 7. Service price list (UGX; Crater stores amounts x100)

@@ -32,7 +32,7 @@ if [ -f /opt/vipers/tenant/is-tenant ]; then echo "hospital trial server: self-h
 if curl -sk -o /dev/null -w '%{http_code}' https://127.0.0.1:8443/openmrs/ws/rest/v1/session | grep -q 200; then
   QUIET=1 bash $S/05-demo-accounts.sh
   docker cp $S/crater-demo-user.php bahmni-lite-crater-php-1:/tmp/crater-demo-user.php >/dev/null 2>&1 && \
-    docker exec bahmni-lite-crater-php-1 php /tmp/crater-demo-user.php 2>&1 | grep -v -E 'roles: cashier|eprecat' || true
+    docker exec -e VIPERS_DEMO_BILLING=1 bahmni-lite-crater-php-1 php /tmp/crater-demo-user.php 2>&1 | grep -v -E 'roles: cashier|eprecat' || true
 else
   echo "OpenMRS not answering yet"
 fi

@@ -55,6 +55,8 @@ async function discharge(page) {
   const { b, page, errors } = await browser({ width: 1366, height: 900 });
   try {
     await login(page, 'demo.nurse', 'brighton');
+    // the Home tiles render after the sign-in redirect settles; give them time instead of reading the page at once
+    await page.waitForFunction(() => /In-Patient/.test(document.body.innerText), null, { timeout: 30000 }).catch(() => {});
     const tiles = await page.evaluate(() => document.body.innerText);
     ok('Ward Nurse home shows the In-Patient tile', /In-Patient/.test(tiles), tiles.split('\n').filter(Boolean).slice(0, 8).join(', '));
     const pat = (await api(page, `/openmrs/ws/rest/v1/patient/${P}?v=custom:(identifiers:(identifier),display)`));

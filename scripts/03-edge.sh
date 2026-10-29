@@ -27,6 +27,10 @@ AI_ON="${AI_ENABLED:-$AI_ON}"
 # (a missing file or key must fall back to "false", not abort the script under set -e)
 FREE_TEXT="${AI_ALLOW_FREE_TEXT:-$( (grep -s '^AI_ALLOW_FREE_TEXT=' /opt/vipers/edge/edge.env || true) | tail -1 | cut -d= -f2)}"
 [ "$FREE_TEXT" = true ] || FREE_TEXT=false
+# AI allowances: an explicit value, else the current one (a trial keeps its smaller allowance), else the default
+cur() { (grep -s "^$1=" /opt/vipers/edge/edge.env || true) | tail -1 | cut -d= -f2; }
+DAILY_LIMIT="${AI_DAILY_TOKEN_LIMIT:-$(cur AI_DAILY_TOKEN_LIMIT)}"; [[ "$DAILY_LIMIT" =~ ^[0-9]+$ ]] || DAILY_LIMIT=250000
+TOTAL_LIMIT="${AI_TOTAL_TOKEN_LIMIT:-$(cur AI_TOTAL_TOKEN_LIMIT)}"; [[ "$TOTAL_LIMIT" =~ ^[0-9]+$ ]] || TOTAL_LIMIT=1500000
 # portal settings added by operators (TRIAL_IMAGE, TRIAL_SA, ...) survive a regeneration of edge.env
 KEEP=$( (grep -s -E '^TRIAL_[A-Z_]+=' /opt/vipers/edge/edge.env || true) )
 cat > /opt/vipers/edge/edge.env <<EOF
@@ -37,8 +41,8 @@ AI_ALLOW_FREE_TEXT=$FREE_TEXT
 AI_MODEL=${AI_MODEL:-deepseek-flash}
 AI_URL=${AI_URL:-https://api.deepseek.com/chat/completions}
 $AI_KEY_LINE
-AI_DAILY_TOKEN_LIMIT=${AI_DAILY_TOKEN_LIMIT:-250000}
-AI_TOTAL_TOKEN_LIMIT=${AI_TOTAL_TOKEN_LIMIT:-1500000}
+AI_DAILY_TOKEN_LIMIT=$DAILY_LIMIT
+AI_TOTAL_TOKEN_LIMIT=$TOTAL_LIMIT
 AI_MAX_OUTPUT_TOKENS=300
 GATE_ENABLED=${GATE_ENABLED:-false}
 GATE_DAYS=14

@@ -70,7 +70,8 @@ setv CRATER_APP_URL "https://$BILLING_HOST"
 setv CRATER_SANCTUM_STATEFUL_DOMAINS "billing.motionimprints.tech,billing.$SSLIP"
 setv CRATER_SESSION_DOMAIN null   # host-only cookie: works on both the real and the fallback hostname
 # the reports service password is created by 04-harden.sh; keep it on every regeneration (DNS switch, trial first boot)
-RP=$(grep '^REPORTS_USER=' /opt/vipers/secrets/stock-users.env 2>/dev/null | cut -d= -f2-)
+# (not created yet on a fresh install: an absent entry is fine, it must not abort the script under set -e)
+RP=$( (grep -s '^REPORTS_USER=' /opt/vipers/secrets/stock-users.env || true) | tail -1 | cut -d= -f2-)
 [ -n "$RP" ] && setv REPORTS_SERVICE_PASSWORD "$RP"
 mv -f "$OUT" .env.vipers
 

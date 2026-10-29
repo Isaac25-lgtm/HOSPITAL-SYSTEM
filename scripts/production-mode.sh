@@ -16,6 +16,10 @@ umask 077
 S="$(cd "$(dirname "$0")" && pwd)"
 HOSPITAL="${HOSPITAL:?set HOSPITAL=\"Hospital name\"}"
 [ ! -f /opt/vipers/tenant/is-tenant ] || { echo "refusing: this is a 5-day trial server, not a production install"; exit 1; }
+# hold the maintenance lock for the whole switch: a guard run already repairing demo accounts finishes first, and no
+# later guard run starts until the production marker is in place (the guard checks the marker after taking the lock)
+exec 9>/run/vipers-ops.lock
+flock -w 900 9 || { echo "another maintenance job is running; try again later"; exit 1; }
 trap 'echo "PRODUCTION SWITCH FAILED at line $LINENO - nothing after this step was done; fix and run again (it is safe to rerun)"' ERR
 
 source /opt/vipers/secrets/vipers.env
