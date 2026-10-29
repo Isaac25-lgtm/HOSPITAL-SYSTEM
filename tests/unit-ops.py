@@ -109,3 +109,86 @@ print('PASS | dated backup pointers expire after 14 days; named backups (baselin
 fb = (ROOT/'scripts/tenant-firstboot.sh').read_text()
 assert fb.index('touch $T/configured') < fb.index('install -m 644 $T/site.json $P') and 'sync\ninstall -m 644 $T/site.json $P' in fb.replace('\r', '')
 print('PASS | first boot commits completion (configured + sync) before publishing readiness')
+
+# --- 29 Oct deep review (D01-D03). Run in a throwaway container (docs/TESTING.md): the demo scripts below are executed
+# for real and must find no /opt/vipers and no Docker if a refusal ever failed.
+def tar_into(path):
+    with tarfile.open(path, 'w:gz') as t:
+        data = b'fictional'; item = tarfile.TarInfo('fixture'); item.size = len(data); t.addfile(item, io.BytesIO(data))
+def fixture_backup(b, extra_listed=()):
+    names = ['openmrs.sql.gz', 'crater.sql.gz', 'crater_atomfeed.sql.gz', 'bahmni-document-images.tgz', 'bahmni-patient-images.tgz',
+             'bahmni-lab-results.tgz', 'bahmni-uploaded-files.tgz', 'crater-app-data.tgz', 'bahmni-clinical-forms.tgz', *extra_listed]
+    for name in names:
+        if name.endswith('.sql.gz'): (b/name).write_bytes(gzip.compress(b'-- fictional dump\n'))
+        else: tar_into(b/name)
+    (b/'CONTENTS').write_text('\n'.join(names + ['CONTENTS']) + '\n', newline='\n')
+    (b/'MANIFEST').write_text(''.join(hashlib.sha256((b/n).read_bytes()).hexdigest() + '  ' + n + '\n' for n in names + ['CONTENTS']), newline='\n')
+
+# D01: a demo job queued behind the production switch re-reads the marker after it gets the lock, and refuses
+with tempfile.TemporaryDirectory(prefix='vipers-d01-') as tmp:
+    d = Path(tmp); (d/'bin').mkdir()
+    # fake flock: the production switch finishes (writes its marker) while this job is waiting for the lock
+    (d/'bin'/'flock').write_text('#!/bin/bash\nprintf "production\\n" > "$VIPERS_PROFILE_FILE"\nexit 0\n', newline='\n'); (d/'bin'/'flock').chmod(0o755)
+    for script in ['reset-demo.sh', '05-demo-accounts.sh', '06-crater.sh', '09-expiry.sh']:
+        (d/'profile').write_text('demo\n', newline='\n')
+        r = bash('export PATH="$1:$PATH" VIPERS_PROFILE_FILE="$2" VIPERS_OPS_LOCK="$3" VIPERS_EXPECTED_HOST="$(hostname)" EXPIRY="2099-01-01 00:00"; bash "$4"',
+                 d/'bin', d/'profile', d/'lock', ROOT/'scripts'/script)
+        assert r.returncode != 0 and 'refusing: production' in r.stdout, (script, r.stdout[-300:], r.stderr[-300:])
+    # a caller that already holds the lock (the guard) is not made to wait for it again, and the check still applies
+    (d/'bin'/'flock').write_text('#!/bin/bash\necho "flock must not be called" >&2; exit 99\n', newline='\n')
+    (d/'profile').write_text('production\n', newline='\n')
+    r = bash('export PATH="$1:$PATH" VIPERS_PROFILE_FILE="$2" VIPERS_OPS_LOCK_HELD=1 VIPERS_EXPECTED_HOST="$(hostname)"; bash "$3"',
+             d/'bin', d/'profile', ROOT/'scripts/05-demo-accounts.sh')
+    assert r.returncode != 0 and 'refusing: production' in r.stdout and 'must not' not in r.stderr, (r.stdout, r.stderr)
+print('PASS | reset/demo accounts/demo billing/expiry check production AFTER the maintenance lock (a queued job refuses)')
+
+# D02: the verified inventory is the only thing a restore can use
+src = ROOT/'scripts/backup-verify.sh'
+verify = 'source "$1"; verify_backup "$2"'
+with tempfile.TemporaryDirectory(prefix='vipers-d02-') as tmp:
+    b = Path(tmp)/'b'; b.mkdir(); fixture_backup(b)
+    r = bash(verify, src, b); assert r.returncode == 0, ('valid backup refused', r.stderr)
+    (b/'bahmni-forms.tgz').write_bytes(b'corrupt and not in the manifest')
+    r = bash(verify, src, b); assert r.returncode != 0 and 'unlisted' in r.stderr, ('unlisted corrupt archive accepted', r.stderr)
+    (b/'bahmni-forms.tgz').unlink(); tar_into(b/'bahmni-forms.tgz')
+    r = bash(verify, src, b); assert r.returncode != 0 and 'unlisted' in r.stderr, ('unlisted valid archive accepted', r.stderr)
+    (b/'bahmni-forms.tgz').unlink(); (b/'.hidden').write_text('x')
+    r = bash(verify, src, b); assert r.returncode != 0, 'unlisted hidden file accepted'
+    (b/'.hidden').unlink(); (b/'subdir').mkdir()
+    r = bash(verify, src, b); assert r.returncode != 0, 'directory entry accepted'
+with tempfile.TemporaryDirectory(prefix='vipers-d02-') as tmp:
+    b = Path(tmp)/'b'; b.mkdir(); fixture_backup(b, extra_listed=['bahmni-forms.tgz'])
+    r = bash(verify, src, b); assert r.returncode == 0, ('listed optional volume refused', r.stderr)
+with tempfile.TemporaryDirectory(prefix='vipers-d02-') as tmp:
+    b = Path(tmp)/'b'; b.mkdir(); fixture_backup(b, extra_listed=['openmrs-data.tgz'])
+    r = bash(verify, src, b); assert r.returncode != 0 and 'unknown volume' in r.stderr, ('listed unknown volume accepted', r.stderr)
+reset = (ROOT/'scripts/reset-demo.sh').read_text()
+assert '"$D"/*.tgz' not in reset and 'for v in $RESTORE_VOLS' in reset and reset.index('RESTORE_VOLS=') < reset.index('vipers dc stop')
+# the web proxies resolve the restarted services again after the restore (restore drill, 29 Oct)
+assert reset.index('vipers dc restart proxy crater-nginx') > reset.index('vipers up >/dev/null')
+print('PASS | restore uses only the verified inventory: unlisted (corrupt or valid) archives, stray entries and unknown volumes are refused')
+
+# D03: mount sources are files before the first start (also replacing an empty directory Docker made earlier)
+with tempfile.TemporaryDirectory(prefix='vipers-d03-') as tmp:
+    d = Path(tmp); (d/'bin').mkdir(); br = d/'branding'
+    (d/'bin'/'docker').write_text('#!/bin/bash\ncase "$*" in *bahmni/reports*) printf "openmrs.service.password=default\\nother=1\\n";; '
+                                  '*crater-nginx*) printf "server {\\n  access_log /var/log/nginx/access.log;\\n}\\n";; *) exit 1;; esac\n', newline='\n')
+    (d/'bin'/'docker').chmod(0o755)
+    run = lambda: bash('export PATH="$1:$PATH" VIPERS_BRANDING="$2"; bash "$3"', d/'bin', br, ROOT/'scripts/stage-mounts.sh')
+    tpl, conf = br/'bahmni-reports.properties.template', br/'crater-nginx.conf'
+    tpl.mkdir(parents=True); conf.mkdir()                      # what Docker leaves after a start without the files
+    r = run(); assert r.returncode == 0, (r.stdout, r.stderr)
+    assert tpl.is_file() and 'openmrs.service.password=${REPORTS_SERVICE_PASSWORD}' in tpl.read_text()
+    assert conf.is_file() and 'access_log /var/log/nginx/access.log vipers_noquery;' in conf.read_text()
+    tpl.write_text(tpl.read_text() + '# operator edit\n'); r = run()
+    assert r.returncode == 0 and '# operator edit' in tpl.read_text(), 'existing file not kept'
+    conf.unlink(); conf.mkdir(); (conf/'x').write_text('x'); r = run()
+    assert r.returncode != 0 and 'non-empty directory' in r.stdout, (r.stdout, r.stderr)
+cfg, vip = (ROOT/'scripts/02-configure.sh').read_text(), (ROOT/'scripts/vipers.sh').read_text()
+assert 'stage-mounts.sh' in cfg and 'crater-nginx.conf' in vip and 'bahmni-reports.properties.template' in vip
+print('PASS | mount sources staged as files before the first start (empty Docker-made directory replaced, edits kept, wrong type refused); vipers up refuses without them')
+
+# production switch uses the stale-visit start action this OpenMRS version has (acceptance run, 29 Oct)
+pm = (ROOT/'scripts/production-mode.sh').read_text()
+assert '"action":"STARTTASK"' not in pm and '"action":"SCHEDULETASK"' in pm and 'stale-visit task did not start' in pm
+print('PASS | production switch starts the stale-visit task with SCHEDULETASK and verifies it runs')

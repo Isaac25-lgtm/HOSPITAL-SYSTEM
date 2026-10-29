@@ -13,7 +13,7 @@ const run = async (label, fn, page) => { const t = Date.now(); try { const r = a
   let uuid = await withUser('demo.reception', 'liverpool', page => run('Phone: register patient + start OPD visit', async () => { const u = await register(page, p); await shot(page, 'mob-1-registered'); return u; }, page));
   if (uuid) {
     await withUser('demo.doctor', 'arsenal', page => run('Phone: consultation (diagnosis, lab order, prescription, vitals) saved', async () => {
-      await consult(page, uuid, { diagnoses: [['Malaria', 'Falciparum malaria', 'Confirmed']], tests: [['Malaria', 'Rapid test for malaria']],
+      await consult(page, uuid, { diagnoses: [['Falciparum', 'Falciparum malaria', 'Confirmed']], tests: [['Malaria', 'Rapid test for malaria']],
         meds: [{ q: 'Artemether', drug: 'Artemether 20 mg + Lumefantrine 120 mg (Tablet)', dose: 4, unit: 'Tablet', freq: 'Twice a day', days: 3 }], vitals: [100, 97, 20, 101.0, 114, 74] });
       await shot(page, 'mob-2-consult-saved');
     }));

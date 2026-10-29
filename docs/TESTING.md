@@ -28,12 +28,17 @@ Run in the plain Node 22 image on the server:
 docker run --rm -v /opt/vipers/edge/addons:/app:ro -v /opt/vipers/tests:/t:ro node:22-alpine node /t/unit-ai.js
 docker run --rm -v /opt/vipers/edge/addons:/app:ro -v /opt/vipers/tests:/t:ro node:22-alpine node /t/unit-trial.js
 docker run --rm -v /opt/vipers/edge/addons:/app:ro -v /opt/vipers/tests:/t:ro node:22-alpine node /t/unit-trial-recovery.js
+docker run --rm -v /opt/vipers:/k:ro node:22-alpine node /k/tests/unit-overlay.js
+# shell/ops checks: in a throwaway container, because they run the real demo scripts (which must refuse) and need no Docker
+docker run --rm -v /opt/vipers:/k:ro python:3.12-slim sh -c 'apt-get update -qq && apt-get install -y -qq jq >/dev/null && python3 /k/tests/unit-ops.py'
 ```
 
 | Test | What it proves |
 |---|---|
 | `unit-ai.js` | The real AI proxy against a fake provider that records every outbound request: malformed bodies get 400 and never stop the process; a Unicode gate code does not crash; a refused patient question never reaches the provider, now or later as history; patient names in screen labels/title are not forwarded; screen labels are kept out of the system instructions; no shared cache for follow-ups or other roles; client-supplied page/role text is replaced. |
 | `unit-trial.js` | The real provisioner against a fake metadata server and Compute API: simultaneous sign-ups (same / different usernames) respect uniqueness and the cap; servers are labelled for reconciliation and receive the current add-on code; refused deletes keep their slot and are retried; deletion is confirmed; an unknown labelled server is adopted and deleted at expiry; hospital self-delete refuses a wrong token, accepts the right one, never stores the token. |
+| `unit-overlay.js` | Browser overlay functions in isolation: branding never rewrites clinical text; the Appointments sentence fix stays on that app; In-Patient diagnoses retry after a failure, follow pagination, and time out (then retry) when the response body stalls. |
+| `unit-ops.py` | Shell paths with fixtures: strict first boot, firewall commands (mocked), edge.env regeneration, backup retention and completion order; demo jobs queued behind the production switch refuse after taking the lock; the restore uses only the verified inventory (unlisted, corrupt or unknown archives refused); mounted config files are staged as files before the first start. |
 | `unit-trial-recovery.js` | Recovery paths: a refresh still waiting on the cloud when the trial is deleted never overwrites `deleted` (also for a 404); a server found again for a failed record revives that one record and the status answer follows it; a server found again after a confirmed deletion is deleted again; new server names carry no hospital name. |
 
 ## Trial portal, end to end

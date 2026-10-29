@@ -3,6 +3,9 @@
 #   EXPIRY="2026-11-04 08:47" bash 09-expiry.sh        # install / move the timer (time is Africa/Kampala)
 #   systemctl disable --now vipers-expiry.timer         # cancel (extend the demo)
 source "$(dirname "$0")/00-guard.sh" 2>/dev/null || source /tmp/00-guard.sh
+# maintenance lock FIRST, profile check SECOND: a job queued behind the production switch must see the marker it wrote
+# (a caller that already holds the lock, e.g. the guard, exports VIPERS_OPS_LOCK_HELD=1)
+[ "${VIPERS_OPS_LOCK_HELD:-}" = 1 ] || { exec 9>"${VIPERS_OPS_LOCK:-/run/vipers-ops.lock}"; flock -w 600 9 || { echo "another maintenance job is running"; exit 1; }; export VIPERS_OPS_LOCK_HELD=1; }
 # a server switched to production mode (scripts/production-mode.sh) never runs demo tooling
 [ "$(cat "${VIPERS_PROFILE_FILE:-/opt/vipers/profile}" 2>/dev/null)" = production ] && { echo "refusing: production server (no demo accounts, demo reset or demo expiry)"; exit 1; }
 set -e

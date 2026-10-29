@@ -75,6 +75,11 @@ RP=$( (grep -s '^REPORTS_USER=' /opt/vipers/secrets/stock-users.env || true) | t
 [ -n "$RP" ] && setv REPORTS_SERVICE_PASSWORD "$RP"
 mv -f "$OUT" .env.vipers
 
+# files bind-mounted by docker-compose.vipers.yml must exist as FILES before the first `vipers up`: a missing source
+# is created by Docker as a directory, and the later setup scripts could then never write the file
+SM="$SD/stage-mounts.sh"; [ -f "$SM" ] || SM=/tmp/stage-mounts.sh
+bash "$SM"
+
 OVR_SRC="$SD/docker-compose.vipers.yml"; [ -f "$OVR_SRC" ] || OVR_SRC=/tmp/docker-compose.vipers.yml
 [ -f "$OVR_SRC" ] && cp "$OVR_SRC" "$LITE/docker-compose.vipers.yml"
 

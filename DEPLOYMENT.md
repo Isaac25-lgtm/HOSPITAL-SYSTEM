@@ -27,7 +27,7 @@ Internal only: openmrsdb (MySQL 8), reportsdb, craterdb, crater-atomfeed(-db), t
 | `scripts/00-guard.sh` | every script refuses to run unless on the expected Linux server |
 | `scripts/01-install-docker.sh` | Docker Engine + Compose, 4 GB swap, log rotation, timezone |
 | `scripts/01b-get-bahmni.sh` | clone `2.0.0-lite` on the server, pull images (OpenMRS 2.0.1) |
-| `scripts/02-configure.sh` | generate secrets (root-only), build `.env.vipers` (UGX, Kampala, Crater branding, hostnames) |
+| `scripts/02-configure.sh` | generate secrets (root-only), build `.env.vipers` (UGX, Kampala, Crater branding, hostnames); stages the files mounted into containers (`stage-mounts.sh`) so they exist before the first start |
 | `scripts/docker-compose.vipers.yml` | localhost-only ports, restart policies, white-label overlay hook |
 | `scripts/vipers.sh` | server command `vipers up/down/restart/ps/logs/health/dc` |
 | `scripts/04-harden.sh` | replace OpenMRS default passwords (superman, admin, stock users) |
@@ -74,7 +74,7 @@ export VIPERS_EXPECTED_HOST=$(hostname) PUBLIC_IP=<server ip>
 cp ../scripts/00-guard.sh /tmp/
 bash 01-install-docker.sh
 bash 01b-get-bahmni.sh
-BILLING_HOST=billing.example.org bash 02-configure.sh
+BILLING_HOST=billing.example.org bash 02-configure.sh                       # also stages the mounted config files (stage-mounts.sh)
 install -m 755 vipers.sh /usr/local/bin/vipers && vipers up         # first OpenMRS start: 10-20 min
 until curl -sk https://127.0.0.1:8443/openmrs/ws/rest/v1/session | grep -q authenticated; do sleep 20; done
 bash 04-harden.sh && bash 05-demo-accounts.sh

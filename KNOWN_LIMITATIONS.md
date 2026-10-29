@@ -27,6 +27,7 @@ Be open about these with prospective clients. None of them stop the demo workflo
 - **Automated testers:** the History and Examination form can crash (React error #185, the open consultation is lost) if a long text is typed in one machine-speed burst. Human typing, pasting and fast typists (30 ms per key) were tested and do not trigger it; browser agents should type long notes in short chunks.
 - **Temperature is entered in °F** in the stock Vitals form. Changing to °C requires concept/form configuration (out of scope for this demo).
 - **Patient ID prefix is `ABC`** (stock Bahmni identifier source), e.g. ABC200003.
+- **Diagnosis search lists at most about 20 matches and its order can change** (after OpenMRS rebuilds its search index, e.g. after a restore): typing only "malaria" may not show *Falciparum malaria*. Type a more specific word ("falciparum") to find a diagnosis quickly.
 - **Address fields are generic** (District/State/Pin Code labels and an India-oriented hierarchy from the stock config). City/Village works as free text.
 - **Billing shows a "GST Number" field** on invoices (Indian tax field in the Bahmni Crater build), and synced customer names may show a double space when there is no middle name.
 - **Billing has a separate login** (e-mail based), as in the official Bahmni Lite design.

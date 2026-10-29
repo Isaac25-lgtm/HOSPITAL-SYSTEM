@@ -13,6 +13,7 @@ echo "== $(date '+%F %T %Z') guard run"
 # never act while a restore, backup or trial setup is running (they stop services on purpose)
 exec 9>/run/vipers-ops.lock
 flock -n 9 || { echo "maintenance in progress: skipping"; exit 0; }
+export VIPERS_OPS_LOCK_HELD=1   # the demo scripts it runs (05-demo-accounts) must not wait for this same lock
 [ -f /opt/vipers/tenant/setup-running ] && { echo "trial setup in progress: skipping"; exit 0; }
 
 [ ! -f /opt/vipers/maintenance ] || { echo "application intentionally stopped"; exit 0; }

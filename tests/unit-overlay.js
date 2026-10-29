@@ -28,7 +28,10 @@ console.log('PASS | appointments sentence fixed only on the Appointments app and
 const attrs = {}, element = { children: [], isConnected: true, textContent: 'No diagnosis for this patient', getAttribute: k => attrs[k], setAttribute(k, v) { attrs[k] = v; }, removeAttribute(k) { delete attrs[k]; }, hasAttribute: k => k in attrs, appendChild(e) { this.children.push(e); } };
 const id = '11111111-1111-1111-1111-111111111111';
 c.location = { pathname: '/bahmni/adt/', hash: '#/patient/' + id, origin: 'https://hospital.test' };
-c.URL = URL; c.Promise = Promise; c.Date = Date;
+c.URL = URL; c.Promise = Promise; c.Date = Date; c.AbortController = AbortController;
+// controlled timers: the diagnosis deadline is fired by the test, never by the clock
+const timers = new Map(); let timerId = 0;
+c.setTimeout = fn => { timers.set(++timerId, fn); return timerId; }; c.clearTimeout = i => { timers.delete(i); };
 c.document.querySelectorAll = () => [element];
 c.el = (tag, props, children) => ({ tag, ...props, children });
 let requests = 0, fail = true;
@@ -47,4 +50,21 @@ const tick = () => new Promise(r => setImmediate(r));
   assert.equal(attrs['data-vp-dx'], id); assert.equal(requests, 3);
   assert.equal(element.children[1].children[0].text, 'Older valid diagnosis');
   console.log('PASS | failed diagnosis load retries and includes valid diagnoses on later pages');
+
+  // headers arrive but the body never completes: the deadline must still end the request, and the next attempt loads
+  for (const k of Object.keys(attrs)) delete attrs[k];
+  element.children = []; element.textContent = 'No diagnosis for this patient';
+  let stall = true; requests = 0;
+  c.fetch = async () => { requests++; return stall ? { ok: true, json: () => new Promise(() => {}) }
+    : { ok: true, json: async () => ({ resourceType: 'Bundle', entry: [{ resource: { resourceType: 'Condition', code: { text: 'Recovered diagnosis' } } }] }) }; };
+  c.adtDiagnoses(); await tick(); await tick();
+  assert.equal(attrs['data-vp-dx-loading'], '1'); assert.equal(timers.size, 1, 'deadline still running while the body is read');
+  c.adtDiagnoses(); assert.equal(requests, 1, 'no second request while one is in flight');
+  for (const [i, fn] of [...timers]) { timers.delete(i); fn(); }
+  await tick(); await tick();
+  assert.equal(attrs['data-vp-dx-loading'], undefined); assert.match(element.textContent, /unavailable/);
+  stall = false; attrs['data-vp-dx-retry'] = '0'; c.adtDiagnoses(); await tick(); await tick();
+  assert.equal(attrs['data-vp-dx'], id); assert.equal(requests, 2); assert.equal(timers.size, 0);
+  assert.equal(element.children[1].children[0].text, 'Recovered diagnosis');
+  console.log('PASS | a diagnosis response whose body stalls still times out, and the next attempt loads');
 })().catch(e => { console.error(e); process.exitCode = 1; });

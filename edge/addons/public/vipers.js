@@ -810,13 +810,14 @@
       var u = new URL(url, location.origin);
       if (u.origin !== location.origin || !/^\/openmrs\/ws\/fhir2\/R4\/Condition(?:$|\?)/.test(u.pathname + u.search) || seen[u.href]) return Promise.reject(new Error('Invalid diagnosis pagination'));
       seen[u.href] = true;
-      // bounded: a hanging request ends as a failure (and is retried) instead of blocking retries for ever
-      var ctl = typeof AbortController !== "undefined" ? new AbortController() : null, timer = ctl && setTimeout(function () { ctl.abort(); }, 15000);
-      return fetch(u.href, { credentials: 'same-origin', headers: { Accept: 'application/fhir+json' }, signal: ctl ? ctl.signal : undefined }).then(function (r) {
-        if (timer) clearTimeout(timer);
+      // bounded: a request that hangs - before the headers OR while the body is read - ends as a failure (and is
+      // retried) instead of blocking retries for ever; the deadline is cleared only once the body has been read
+      var ctl = typeof AbortController !== "undefined" ? new AbortController() : null, timer;
+      var deadline = new Promise(function (_, reject) { timer = setTimeout(function () { if (ctl) ctl.abort(); reject(new Error('Diagnosis request timed out')); }, 15000); });
+      return Promise.race([fetch(u.href, { credentials: 'same-origin', headers: { Accept: 'application/fhir+json' }, signal: ctl ? ctl.signal : undefined }).then(function (r) {
         if (!r.ok) throw new Error('Diagnosis request failed');
         return r.json();
-      }).then(function (b) {
+      }), deadline]).then(function (b) { clearTimeout(timer); return b; }, function (e) { clearTimeout(timer); throw e; }).then(function (b) {
         if (b.resourceType !== 'Bundle') throw new Error('Invalid diagnosis response');
         conditions = conditions.concat((b.entry || []).map(function (x) { return x.resource; }));
         var next = (b.link || []).filter(function (l) { return l.relation === 'next'; })[0];

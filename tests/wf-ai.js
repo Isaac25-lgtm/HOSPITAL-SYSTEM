@@ -49,11 +49,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
     const aiStatus = await page.evaluate(() => fetch('/vipers-ai/api/status').then(r => r.json()));
     // ---- novel questions -> DeepSeek only when explicitly enabled ----
+    // identical first questions are answered from the service's cache (by design), so each run tags its "new" questions
+    // (lowercase letters only: no digits or capitalised words that the privacy filters would treat as patient data)
+    const tag = ' (ref ' + Array.from({ length: 6 }, () => 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)]).join('') + ')';
     const novel = [
-      ['If a patient arrives without an appointment, what is the quickest way to get them to the doctor?', 'patient-search', 'Receptionist'],
-      ['What is the difference between Waitlist and Scheduled when booking?', 'appointments', 'Receptionist'],
-      ['After saving the vitals form, why is the data not saved until later?', 'vitals', 'Doctor'],
-      ['Where do I see how much money was collected this month?', 'billing-invoices', 'Cashier'],
+      ['If a patient arrives without an appointment, what is the quickest way to get them to the doctor?' + tag, 'patient-search', 'Receptionist'],
+      ['What is the difference between Waitlist and Scheduled when booking?' + tag, 'appointments', 'Receptionist'],
+      ['After saving the vitals form, why is the data not saved until later?' + tag, 'vitals', 'Doctor'],
+      ['Where do I see how much money was collected this month?' + tag, 'billing-invoices', 'Cashier'],
     ];
     for (const [q, p, r] of novel) {
       const res = await ask(q, p, r);
@@ -76,7 +79,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
     // ---- rate limit ----
     let limited = 0;
-    for (let i = 0; i < 8; i++) { const r = await ask(`Rate limit probe ${i}: where is the settings menu for printing labels number ${i}?`, 'home'); if (r.status === 429 || r.source === 'ratelimit') limited++; }
+    for (let i = 0; i < 8; i++) { const r = await ask(`Rate limit probe ${i}: where is the settings menu for printing labels number ${i}?${tag}`, 'home'); if (r.status === 429 || r.source === 'ratelimit') limited++; }
     ok('Excessive requests are rate-limited', (!aiStatus.freeText || limited > 0), `${limited} of 8 rapid novel questions rejected with 429`);
 
     // ---- key secrecy ----

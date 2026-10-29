@@ -2,6 +2,9 @@
 # Create/repair VIPERS demo roles + accounts in OpenMRS. Idempotent; also run every 15 min by
 # vipers-guard.timer so testers cannot lock others out by changing demo passwords or roles.
 source "$(dirname "$0")/00-guard.sh" 2>/dev/null || source /tmp/00-guard.sh >/dev/null
+# maintenance lock FIRST, profile check SECOND: a job queued behind the production switch must see the marker it wrote
+# (a caller that already holds the lock, e.g. the guard, exports VIPERS_OPS_LOCK_HELD=1)
+[ "${VIPERS_OPS_LOCK_HELD:-}" = 1 ] || { exec 9>"${VIPERS_OPS_LOCK:-/run/vipers-ops.lock}"; flock -w 600 9 || { echo "another maintenance job is running"; exit 1; }; export VIPERS_OPS_LOCK_HELD=1; }
 # a server switched to production mode (scripts/production-mode.sh) never runs demo tooling
 [ "$(cat "${VIPERS_PROFILE_FILE:-/opt/vipers/profile}" 2>/dev/null)" = production ] && { echo "refusing: production server (no demo accounts, demo reset or demo expiry)"; exit 1; }
 set +e
@@ -24,7 +27,7 @@ gp security.passwordCannotMatchUsername true
 gp security.userUnlockWaitTime 5
 
 # ---- demo only: keep visits open across days so the seeded patients stay in the Active / Lab lists ----
-# (real hospitals should keep "Close Stale Visits Task" running; re-enable with action STARTTASK)
+# (real hospitals should keep "Close Stale Visits Task" running; re-enable with action SCHEDULETASK, as production-mode.sh does)
 if [ "${KEEP_VISITS_OPEN:-1}" = 1 ]; then
   q -o /dev/null -d '{"tasks":["Close Stale Visits Task"],"action":"SHUTDOWNTASK"}' "$API/taskaction"
 fi

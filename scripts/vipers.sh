@@ -7,7 +7,11 @@ DC=(docker compose --env-file .env.vipers -f docker-compose.yml -f docker-compos
 [ -f docker-compose.edge.yml ] && DC+=(-f docker-compose.edge.yml)
 
 case "${1:-ps}" in
-  up)      "${DC[@]}" up -d --remove-orphans; rm -f /opt/vipers/maintenance ;;
+  up)      # refuse to start with a missing or wrong-type mount source (Docker would silently create a directory)
+           for m in /opt/vipers/branding/crater-nginx.conf /opt/vipers/branding/bahmni-reports.properties.template; do
+             [ -f "$m" ] && [ -s "$m" ] || { echo "ABORT: $m is missing or not a file - run stage-mounts.sh (02-configure.sh does)"; exit 1; }
+           done
+           "${DC[@]}" up -d --remove-orphans; rm -f /opt/vipers/maintenance ;;
   down)    touch /opt/vipers/maintenance; "${DC[@]}" stop ;;                       # stop only: never removes volumes
   restart) shift; "${DC[@]}" restart "$@" ;;
   ps)      "${DC[@]}" ps --format 'table {{.Service}}\t{{.Status}}' ;;

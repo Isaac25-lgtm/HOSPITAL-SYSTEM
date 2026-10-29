@@ -108,7 +108,7 @@
       "tip": "Add everything for this visit, then click Done at the bottom to save it all at once.",
       "steps": [
         "Allergies: search and add any allergy.",
-        "Diagnoses: search (e.g. Malaria), pick the diagnosis and set Certainty (Confirmed or Provisional).",
+        "Diagnoses: search with a specific word (e.g. Falciparum for Falciparum malaria; the list shows only the top matches), pick the diagnosis and set Certainty (Confirmed or Provisional).",
         "Order Investigations/Procedures: search a test (e.g. Rapid test for malaria); tick Urgent if needed.",
         "Medications: search a drug, then enter Dosage, Dosage Unit, Frequency, Duration and Route.",
         "Vitals or History and Examination: click the pinned form, fill it and click Save Form.",

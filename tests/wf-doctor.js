@@ -35,7 +35,7 @@ async function pick(page, inputSel, query, optionText) {
     await page.waitForSelector('#diagnoses-search', { timeout: 30000 });
     ok('Open New Consultation pad', true);
 
-    await pick(page, '#diagnoses-search', 'Malaria', 'Falciparum malaria');
+    await pick(page, '#diagnoses-search', 'Falciparum', 'Falciparum malaria');   // ("malaria" alone lists only the top ~20 matches)
     console.log('  after diagnosis:', JSON.stringify(await dumpNear(page, /malaria|primary|secondary|confirm|presum|certain/)));
     ok('Add diagnosis "Falciparum malaria"', (await page.locator('text=Falciparum malaria').count()) > 0);
 

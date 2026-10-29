@@ -1,6 +1,9 @@
 #!/bin/bash
 # Configure Crater (billing) for VIPERS HOSPITAL: UGX, Kampala time, logo, cashier role + demo user, service price list.
 source "$(dirname "$0")/00-guard.sh" 2>/dev/null || source /tmp/00-guard.sh
+# maintenance lock FIRST, profile check SECOND: a job queued behind the production switch must see the marker it wrote
+# (a caller that already holds the lock, e.g. the guard, exports VIPERS_OPS_LOCK_HELD=1)
+[ "${VIPERS_OPS_LOCK_HELD:-}" = 1 ] || { exec 9>"${VIPERS_OPS_LOCK:-/run/vipers-ops.lock}"; flock -w 600 9 || { echo "another maintenance job is running"; exit 1; }; export VIPERS_OPS_LOCK_HELD=1; }
 # demo billing setup (public demo cashier, fictional company details) is refused on production and trial servers
 [ "$(cat "${VIPERS_PROFILE_FILE:-/opt/vipers/profile}" 2>/dev/null)" = production ] && { echo "refusing: production server"; exit 1; }
 [ -f /opt/vipers/tenant/is-tenant ] && { echo "refusing: hospital trial server"; exit 1; }
@@ -100,10 +103,5 @@ docker exec bahmni-lite-crater-php-1 php /var/www/artisan cache:clear >/dev/null
 
 # 8. The Bahmni->Crater sync logs in with credentials in the URL query string; keep query strings out of
 #    Crater's nginx access log (mounted via docker-compose.vipers.yml).
-CONF=/opt/vipers/branding/crater-nginx.conf; mkdir -p /opt/vipers/branding
-if [ ! -f "$CONF" ]; then
-  { echo 'log_format vipers_noquery '"'"'$remote_addr - $remote_user [$time_local] "$request_method $uri $server_protocol" $status $body_bytes_sent "$http_referer" "$http_user_agent"'"'"';'
-    docker run --rm --entrypoint cat bahmni/crater-nginx:${CRATER_NGINX_IMAGE_TAG:-1.0.0} /etc/nginx/conf.d/nginx.conf \
-      | sed 's#access_log /var/log/nginx/access.log;#access_log /var/log/nginx/access.log vipers_noquery;#'; } > "$CONF"
-  echo "crater nginx log format without query strings written"
-fi
+SM="$(dirname "$0")/stage-mounts.sh"; [ -f "$SM" ] || SM=/tmp/stage-mounts.sh
+bash "$SM" || exit 1       # (normally already done by 02-configure.sh before the first start)

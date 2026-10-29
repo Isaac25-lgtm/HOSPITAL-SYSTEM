@@ -8,7 +8,7 @@ const { consult } = require('./flows');
   const AL = { q: 'Artemether', drug: 'Artemether 20 mg + Lumefantrine 120 mg (Tablet)', dose: 4, unit: 'Tablet', freq: 'Twice a day', days: 3 };
   const PCM = { q: 'Paracetamol', drug: 'Paracetamol 500 mg (Tablet)', dose: 2, unit: 'Tablet', freq: 'Thrice a day', days: 3 };
   try {
-    const spec = process.env.CASE === 'brian' ? { diagnoses: [['Pneumonia', 'Pneumonia', 'Provisional']], tests: [['Malaria', 'Malarial smear']], meds: [{ q: 'Amoxicillin', drug: 'Amoxicillin 250 mg/5 ml (Oral solution)', dose: 5, unit: 'Milliliter', freq: 'Thrice a day', days: 5 }], vitals: [118, 95, 34, 101.5] } : { diagnoses: [['Malaria', 'Falciparum malaria', 'Confirmed']], tests: [['Malaria', 'Rapid test for malaria']], meds: [AL, PCM], vitals: [104, 96, 22, 102.2, 112, 72] };
+    const spec = process.env.CASE === 'brian' ? { diagnoses: [['Pneumonia', 'Pneumonia', 'Provisional']], tests: [['Malaria', 'Malarial smear']], meds: [{ q: 'Amoxicillin', drug: 'Amoxicillin 250 mg/5 ml (Oral solution)', dose: 5, unit: 'Milliliter', freq: 'Thrice a day', days: 5 }], vitals: [118, 95, 34, 101.5] } : { diagnoses: [['Falciparum', 'Falciparum malaria', 'Confirmed']], tests: [['Malaria', 'Rapid test for malaria']], meds: [AL, PCM], vitals: [104, 96, 22, 102.2, 112, 72] };
     await consult(page, process.env.PATIENT, spec);
     console.log('SAVED OK');
   } catch (e) {

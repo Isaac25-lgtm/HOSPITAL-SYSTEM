@@ -20,6 +20,7 @@ HOSPITAL="${HOSPITAL:?set HOSPITAL=\"Hospital name\"}"
 # later guard run starts until the production marker is in place (the guard checks the marker after taking the lock)
 exec 9>/run/vipers-ops.lock
 flock -w 900 9 || { echo "another maintenance job is running; try again later"; exit 1; }
+export VIPERS_OPS_LOCK_HELD=1
 trap 'echo "PRODUCTION SWITCH FAILED at line $LINENO - nothing after this step was done; fix and run again (it is safe to rerun)"' ERR
 
 source /opt/vipers/secrets/vipers.env
@@ -58,8 +59,12 @@ setgp security.userUnlockWaitTime 15
 echo "password policy: production"
 
 # 4. close stale visits again (the demo keeps visits open)
-q -o /dev/null -d '{"tasks":["Close Stale Visits Task"],"action":"STARTTASK"}' "$API/taskaction"
-echo "stale-visit task restarted"
+# (this OpenMRS version's start action is SCHEDULETASK - STARTTASK does not exist and was rejected; found by the
+#  production-mode acceptance run on 29 Oct). Start it only if it is stopped, then prove it runs.
+stale_task() { q "$API/taskdefinition?v=custom:(name,started)" | jq -r '.results[] | select(.name=="Close Stale Visits Task") | .started'; }
+[ "$(stale_task)" = true ] || q -o /dev/null -d '{"tasks":["Close Stale Visits Task"],"action":"SCHEDULETASK"}' "$API/taskaction"
+[ "$(stale_task)" = true ] || { echo "stale-visit task did not start"; exit 1; }
+echo "stale-visit task running"
 
 # 5. billing: lock the demo cashier and revoke every copied login
 docker exec -i bahmni-lite-crater-php-1 php -r '

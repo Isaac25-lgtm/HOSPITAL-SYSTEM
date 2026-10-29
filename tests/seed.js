@@ -7,7 +7,7 @@ const PCM = { q: 'Paracetamol', drug: 'Paracetamol 500 mg (Tablet)', dose: 2, un
 
 const PATIENTS = [
   { first: 'Grace', last: 'Nakato', gender: 'Female', age: 29, city: 'Kampala', address: 'Kisenyi (fictional)', phone: '0700100101', visit: true,
-    consult: { diagnoses: [['Malaria', 'Falciparum malaria', 'Confirmed']], tests: [['Malaria', 'Rapid test for malaria']], meds: [AL, PCM], vitals: [104, 96, 22, 102.2, 112, 72] },
+    consult: { diagnoses: [['Falciparum', 'Falciparum malaria', 'Confirmed']], tests: [['Malaria', 'Rapid test for malaria']], meds: [AL, PCM], vitals: [104, 96, 22, 102.2, 112, 72] },
     lab: ['Rapid test for malaria', 'Positive for Plasmodium falciparum', true],
     bill: { items: ['OPD Consultation', 'Rapid test for malaria (RDT)', 'Artemether-Lumefantrine 20/120mg x24', 'Paracetamol 500mg x20'], pay: true } },
   { first: 'Sarah', last: 'Namubiru', gender: 'Female', age: 24, city: 'Wakiso', address: 'Nansana (fictional)', phone: '0700100102', visit: true,

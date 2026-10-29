@@ -47,11 +47,9 @@ done
 
 # The reports service logs in as reports-user (systemId "Reports User"): hand it the new password through
 # a template whose password line reads ${REPORTS_SERVICE_PASSWORD} (mounted by docker-compose.vipers.yml).
-TPL=/opt/vipers/branding/bahmni-reports.properties.template; mkdir -p /opt/vipers/branding
-if [ ! -f "$TPL" ]; then
-  docker run --rm --entrypoint cat "bahmni/reports:${REPORTS_IMAGE_TAG:-1.2.0}" /etc/bahmni-reports/bahmni-reports.properties.template \
-    | sed 's#^openmrs.service.password=.*#openmrs.service.password=${REPORTS_SERVICE_PASSWORD}#' > "$TPL"
-fi
+TPL=/opt/vipers/branding/bahmni-reports.properties.template
+SM="$(dirname "$0")/stage-mounts.sh"; [ -f "$SM" ] || SM=/tmp/stage-mounts.sh
+bash "$SM" || FAILED=1     # (normally already done by 02-configure.sh before the first start)
 [ -s "$TPL" ] && grep -qF 'openmrs.service.password=${REPORTS_SERVICE_PASSWORD}' "$TPL" || { echo 'FAIL: reports template'; FAILED=1; }
 RP=$(grep '^REPORTS_USER=' "$STOCK" | cut -d= -f2-)
 ENVF=/opt/vipers/bahmni-docker/bahmni-lite/.env.vipers

@@ -138,3 +138,24 @@ Defects found by this regression and fixed:
 
 Afterwards: daily trial cap back to 6, test patients removed, new reset baseline (`baseline.current`, verified against its
 manifest and checksums), obsolete image `vipers-hospital-golden-v2` deleted (v1 and v3 kept).
+
+### Restore drill and regression after the cdea522 follow-up (29 Oct 2026)
+
+Fixes for `DEEP-REVIEW-cdea522.md` (D01-D04) and for the defects found by the acceptance runs (A01-A04) deployed on the
+demo server. Response and details: `DEEP-REVIEW-cdea522-RESPONSE.md`; handoff: `HANDOFF-2026-10-29.md`.
+
+Final run: real `reset-demo.sh baseline` (restore exit 0; "ready" printed only once OpenMRS answered through the proxy;
+OpenMRS back in 361 s; all containers running; 5/5 route checks public `/openmrs` 200, billing 200, billing sync running
+with 0 restarts), then the browser regression **immediately**, with no waiting:
+
+| Suite | Result |
+|---|---|
+| run-all: admin, appointments/documents, billing, doctor, help/AI, In-Patient, lab, performance, reception, ux, walkthrough | **ALL PASSED** (9, 3, 6, 16, 22, 6, 4, 7, 6, 28, 7) |
+| wf-mobile (phone) / wf-qa-fixes / wf-cards / wf-loading / wf-spin-watchdog / wf-spin-audit | 6/6, 14/14, 18/18, 3/3, 4/4, 82/82 |
+| Unit suites (server; `unit-ops.py` in a throwaway container) | trial 25/25, admission 4/4, recovery 5/5, AI 17/17, overlay 4/4, privacy pass, ops 12/12 |
+
+Earlier drills on the way there: #1 exposed A01 (web proxies kept stale container addresses; `/openmrs` reached another
+container) and #2 confirmed its fix but met a cold server (A03) and the diagnosis-search ranking change after the index
+rebuild (A04). Production-mode acceptance on a disposable copy of image v4 exposed A02 (`STARTTASK`), passed after the fix.
+Manual check in Chrome (role cards): doctor sign-in, diagnosis search "falciparum", In-Patient diagnoses (236 ms, no
+console errors), help and Ask Vipers AI. Test data removed afterwards; the demo is on the verified baseline.
