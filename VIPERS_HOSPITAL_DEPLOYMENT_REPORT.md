@@ -10,7 +10,7 @@ Every workflow in the brief was exercised through the real web interface by auto
 
 **Verdict: READY WITH MINOR LIMITATIONS** (see section I).
 
-**Demo activation (10-day clock start): 2026-10-25 08:47 EAT (Africa/Kampala). Planned end: 2026-11-04 08:47 EAT (the VM takes a final backup and powers itself off automatically).**
+**Demo activation (10-day clock start): 2026-10-25 08:47 EAT (Africa/Kampala). Planned end: 2026-11-08 08:47 EAT (moved from 2026-11-04 on 29 Oct; the VM takes a final backup and powers itself off automatically).**
 
 ## B. Deployment details
 
@@ -96,7 +96,7 @@ Actual screenshots from the deployed system are in `evidence/screenshots/` (desk
 | Remaining demo period | 10 days × 3.94 ≈ USD 39.4 (+ small egress) |
 | Trial credit | USD 190.71 remaining (Billing → Credits, 25 Oct; not readable via the CLI) |
 | Alerts | budget USD 50 (25 Oct – 15 Nov), alerts at 20 / 35 / 50 gross of credits; **alerts only e-mail, they don't stop spending** |
-| Demo expiry | 2026-11-04 08:47 EAT (the VM takes a final backup and powers itself off automatically) |
+| Demo expiry | 2026-11-08 08:47 EAT (moved from 2026-11-04 on 29 Oct; the VM takes a final backup and powers itself off automatically) |
 | Shutdown | CLEANUP.md (close firewall → stop VM → delete project → relink PaperAid billing) |
 
 ## H. Outstanding issues

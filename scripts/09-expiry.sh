@@ -1,6 +1,6 @@
 #!/bin/bash
 # One-time end of the 10-day demo: final backup, then power off the VM (stops compute charges and public access).
-#   EXPIRY="2026-11-04 08:47" bash 09-expiry.sh        # install / move the timer (time is Africa/Kampala)
+#   EXPIRY="2026-11-08 08:47" bash 09-expiry.sh        # install / move the timer (time is Africa/Kampala)
 #   systemctl disable --now vipers-expiry.timer         # cancel (extend the demo)
 source "$(dirname "$0")/00-guard.sh" 2>/dev/null || source /tmp/00-guard.sh
 # maintenance lock FIRST, profile check SECOND: a job queued behind the production switch must see the marker it wrote

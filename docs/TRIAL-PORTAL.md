@@ -24,7 +24,7 @@ or earlier if the hospital deletes it itself. At most **3** trial servers exist 
      first-boot script, billing script and add-on code (so servers made from an older image run current logic), and the
      main server's address (`vipers-controller`) from which the server fetches the current web layer.
    - optional `TRIAL_SA` (separate low-privilege service account for trial servers) and `TRIAL_CONTROLLER_UNTIL` (no trial
-     may outlive the main server).
+     may outlive the main server; set on the demo to its power-off, 2026-11-08T05:47:00Z = 08:47 EAT).
 3. The page polls `GET /vipers-trial/api/status?id=` every 15 s; the **background sweep (every 5 min) also checks
    readiness**, so closing the tab does not matter. Ready = `https://demo.<ip>.sslip.io/vipers-assets/site.json` reports
    `mode: "hospital"`. The password and delete token are then removed from the instance metadata (retried until confirmed).

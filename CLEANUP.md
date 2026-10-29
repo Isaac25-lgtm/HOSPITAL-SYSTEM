@@ -4,7 +4,7 @@ Everything for the demo lives in **one Google Cloud project: `vipers-hospital-de
 
 Run these from this folder on your PC (PowerShell; gcloud is already signed in).
 
-> **Automatic end:** the VM takes a final backup and **powers itself off at 2026-11-04 08:47 EAT** (end of the 10 days). That already stops compute charges and public access. The steps below finish the cleanup. To extend the demo instead: `.\vipers.ps1 vm-start` and, on the VM, `sudo systemctl disable --now vipers-expiry.timer`.
+> **Automatic end:** the VM takes a final backup and **powers itself off at 2026-11-08 08:47 EAT** (moved from 4 Nov on 29 Oct at the owner's request). That already stops compute charges and public access. The steps below finish the cleanup. To extend the demo instead: `.\vipers.ps1 vm-start` and, on the VM, `sudo systemctl disable --now vipers-expiry.timer`.
 
 ## 1. Take a final summary (optional)
 

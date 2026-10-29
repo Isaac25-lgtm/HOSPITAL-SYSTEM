@@ -35,7 +35,7 @@ Be open about these with prospective clients. None of them stop the demo workflo
 - **Open access (since 28 Oct 2026):** no access code and no passwords. Anyone with the link can click a role card and enter, and can change data others see. The guard restores accounts every 15 minutes and `reset-demo` restores the data. Not for real patients.
 - The cards sign in to shared accounts with simple passwords (policy relaxed to 6 characters). Wrong passwords typed in the hidden manual form lock that shared account (and its card) for 5 minutes for everyone.
 - **Visits stay open during the demo:** the "Close Stale Visits Task" is paused so the demo patients remain in the Active and Lab lists for all 10 days. A real hospital should keep it running (re-enable with `KEEP_VISITS_OPEN=0` before running `05-demo-accounts.sh`, then start the task in OpenMRS).
-- **The demo powers itself off** at the end of the period (2026-11-04 08:47 EAT) after a final backup. `.\vipers.ps1 vm-start` brings it back; cancel with `sudo systemctl disable --now vipers-expiry.timer` on the VM.
+- **The demo powers itself off** at the end of the period (2026-11-08 08:47 EAT; moved from 4 Nov). New hospital trials are accepted only while they would end before that moment (`TRIAL_CONTROLLER_UNTIL`), i.e. sign-ups until 3 Nov 08:47 get the full 5 days after a final backup. `.\vipers.ps1 vm-start` brings it back; cancel with `sudo systemctl disable --now vipers-expiry.timer` on the VM.
 
 ## Phones and tablets
 
